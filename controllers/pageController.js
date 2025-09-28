@@ -3,10 +3,33 @@ const asyncHandler = require("../utils/asyncHandler");
 const ErrorResponse = require("../utils/errorResponse");
 
 // @desc Create page
+// exports.createPage = asyncHandler(async (req, res) => {
+//   const page = await Page.create({ ...req.body, createdBy: req.user.id });
+//   res.status(201).json({ success: true, data: page });
+// });
+
 exports.createPage = asyncHandler(async (req, res) => {
-  const page = await Page.create({ ...req.body, createdBy: req.user.id });
+  const body = { ...req.body };
+
+  if (body.title) body.title = JSON.parse(body.title);
+  if (body.description) body.description = JSON.parse(body.description);
+  if (body.seo) body.seo = JSON.parse(body.seo);
+  if (body.sections) body.sections = JSON.parse(body.sections);
+
+  // ✅ Replace placeholder with uploaded file paths
+  if (req.files) {
+    body.sections = body.sections.map((s) => {
+      if ((s.type === "imageLeft" || s.type === "imageRight") && s.image && req.files[s.image]) {
+        s.image = `/uploads/${req.files[s.image][0].filename}`; // adjust path as per your multer config
+      }
+      return s;
+    });
+  }
+
+  const page = await Page.create({ ...body, createdBy: req.user.id });
   res.status(201).json({ success: true, data: page });
 });
+
 
 // @desc Get all pages
 exports.getPages = asyncHandler(async (req, res) => {
