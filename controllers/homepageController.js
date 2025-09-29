@@ -34,75 +34,116 @@ exports.updateHomepage = async (req, res) => {
     let definedUsSection = JSON.parse(data.definedUsSection || "{}");
     let coreValuesSection = JSON.parse(data.coreValuesSection || "{}");
 
-// Hero
-if (req.files?.bgFile) {
-  const savedPath = saveFile(req.files.bgFile, "homepage");
-  heroSection.bgUrl = savedPath;
+    // Hero
+    if (req.files?.bgFile) {
+      const savedPath = saveFile(req.files.bgFile, "homepage");
+      heroSection.bgUrl = savedPath;
+      heroSection.bgType = /\.(mp4|webm|mov|avi)$/i.test(savedPath)
+        ? "video"
+        : "image";
+    }
 
-  // detect file type automatically
-  if (/\.(mp4|webm|mov|avi)$/i.test(savedPath)) {
-    heroSection.bgType = "video";
-  } else {
-    heroSection.bgType = "image";
-  }
-}
+    // Who We Are
+    if (req.files?.whoWeAreFile) {
+      whoWeAreSection.whoWeArebannerImage = saveFile(
+        req.files.whoWeAreFile,
+        "homepage"
+      );
+    }
 
-// Who We Are
-if (req.files?.whoWeAreFile) {
-  whoWeAreSection.whoWeArebannerImage = saveFile(req.files.whoWeAreFile, "homepage");
-}
+    // What We Do
+    [
+      "Icon1File",
+      "Icon2File",
+      "Icon3File",
+      "Img1File",
+      "Img2File",
+      "Img3File",
+    ].forEach((field) => {
+      const key = field.replace("File", ""); // e.g. whatWeDoIcon1
+      if (req.files?.[`whatWeDo${field}`]) {
+        whatWeDoSection[`whatWeDo${key}`] = saveFile(
+          req.files[`whatWeDo${field}`],
+          "homepage"
+        );
+      }
+    });
 
-// What We Do
-["Icon1File","Icon2File","Icon3File","Img1File","Img2File","Img3File"].forEach((field, idx) => {
-  const key = field.replace("File", ""); // → whatWeDoIcon1, whatWeDoImg1, etc.
-  if (req.files?.[`whatWeDo${field}`]) {
-    whatWeDoSection[`whatWeDo${key}`] = saveFile(req.files[`whatWeDo${field}`], "homepage");
-  }
-});
+    // ✅ Partners (Infinite Logos) - safer update
+    if (Array.isArray(companyLogosSection.logos)) {
+      companyLogosSection.logos = companyLogosSection.logos.map((logo, i) => {
+        const fileKey = `partnerLogo${i}`;
+        if (req.files?.[fileKey]) {
+          // if a new file was uploaded → overwrite
+          return { url: saveFile(req.files[fileKey], "partners") };
+        }
+        // ✅ keep the old url from DB if it exists
+        if (logo.url) {
+          return { url: logo.url };
+        }
+        return { url: "" }; // fallback
+      });
+    }
 
-// Company Logos
-[1,2,3,4,5,6].forEach((i) => {
-  if (req.files?.[`companyLogo${i}File`]) {
-    companyLogosSection[`companyLogo${i}`] =
-      saveFile(req.files[`companyLogo${i}File`], "homepage");
-  }
-});
+    // Defined Us
+    [1, 2, 3, 4, 5, 6].forEach((i) => {
+      if (req.files?.[`definedUsLogo${i}File`]) {
+        definedUsSection[`definedUsLogo${i}`] = saveFile(
+          req.files[`definedUsLogo${i}File`],
+          "homepage"
+        );
+      }
+    });
 
+    // Core Values
+    if (req.files?.coreImageFile) {
+      coreValuesSection.coreImage = saveFile(
+        req.files.coreImageFile,
+        "homepage"
+      );
+    }
 
-// Defined Us
-[1,2,3,4,5,6].forEach((i) => {
-  if (req.files?.[`definedUsLogo${i}File`]) {
-    definedUsSection[`definedUsLogo${i}`] = saveFile(req.files[`definedUsLogo${i}File`], "homepage");
-  }
-});
-
-// Core Values
-if (req.files?.coreImageFile) {
-  coreValuesSection.coreImage = saveFile(req.files.coreImageFile, "homepage");
-}
-
+    // Save/Update Homepage
     let homepage = await Homepage.findOne();
     if (!homepage) {
       homepage = new Homepage({});
     }
 
     if (Object.keys(heroSection).length) {
-      homepage.heroSection = { ...homepage.heroSection?.toObject(), ...heroSection };
+      homepage.heroSection = {
+        ...homepage.heroSection?.toObject(),
+        ...heroSection,
+      };
     }
     if (Object.keys(whoWeAreSection).length) {
-      homepage.whoWeAreSection = { ...homepage.whoWeAreSection?.toObject(), ...whoWeAreSection };
+      homepage.whoWeAreSection = {
+        ...homepage.whoWeAreSection?.toObject(),
+        ...whoWeAreSection,
+      };
     }
     if (Object.keys(whatWeDoSection).length) {
-      homepage.whatWeDoSection = { ...homepage.whatWeDoSection?.toObject(), ...whatWeDoSection };
+      homepage.whatWeDoSection = {
+        ...homepage.whatWeDoSection?.toObject(),
+        ...whatWeDoSection,
+      };
     }
     if (Object.keys(companyLogosSection).length) {
-      homepage.companyLogosSection = { ...homepage.companyLogosSection?.toObject(), ...companyLogosSection };
+      homepage.companyLogosSection = {
+        ...homepage.companyLogosSection?.toObject(),
+        ...companyLogosSection,
+      };
     }
     if (Object.keys(definedUsSection).length) {
-      homepage.definedUsSection = { ...homepage.definedUsSection?.toObject(), ...definedUsSection };
+      homepage.definedUsSection = {
+        ...homepage.definedUsSection?.toObject(),
+        ...definedUsSection,
+      };
     }
     if (Object.keys(coreValuesSection).length) {
-      homepage.coreValuesSection = { ...homepage.coreValuesSection?.toObject(), ...coreValuesSection };
+      homepage.coreValuesSection = {
+        ...homepage.coreValuesSection?.toObject(),
+        ...coreValuesSection,
+      };
     }
 
     await homepage.save();
@@ -111,4 +152,3 @@ if (req.files?.coreImageFile) {
     res.status(500).json({ error: err.message });
   }
 };
-

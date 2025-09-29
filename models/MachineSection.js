@@ -44,6 +44,7 @@ const sectionSchema = new mongoose.Schema(
         "richtext",
         "imageLeft",
         "imageRight",
+        "image",
         "table",
         "list",
         "blocks",

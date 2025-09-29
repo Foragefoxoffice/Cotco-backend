@@ -1,11 +1,6 @@
 const mongoose = require("mongoose");
 
 const MachineCategorySchema = new mongoose.Schema({
-  mainCategory: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "MainCategory", // ✅ belongs to a MainCategory
-    required: true,
-  },
   name: {
     en: { type: String, required: true, trim: true },
     vn: { type: String, trim: true },

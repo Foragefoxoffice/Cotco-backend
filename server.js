@@ -26,6 +26,7 @@ const pageRoutes = require("./routes/pageRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const machineRoutes = require("./routes/machineRoutes");
 const homepageRoutes = require("./routes/homepageRoutes");
+const aboutRoutes = require("./routes/aboutRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -45,13 +46,24 @@ const io = new Server(httpServer, {
       "http://localhost:5173",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, // If using cookies/auth
+    credentials: true,
   },
 });
 
+// ✅ FIXED express-fileupload config
 app.use(
   fileUpload({
-    createParentPath: true, // auto create folder if not exists
+    createParentPath: true,
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB per file
+      files: 100, // allow up to 100 files in one request
+      fields: 2000, // allow many JSON fields
+    },
+    abortOnLimit: false,
+    preserveExtension: true,
+    safeFileNames: true,
   })
 );
 
@@ -82,7 +94,7 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // Allow cookies/auth
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -99,11 +111,11 @@ if (process.env.NODE_ENV === "development") {
 
 app.use(sanitizeInput);
 
-// ✅ Helmet fixed (allow images + disable strict CSP)
+// ✅ Helmet fixed
 app.use(
   helmet({
-    crossOriginResourcePolicy: false, // allow images from other origins
-    contentSecurityPolicy: false, // disable CSP (or configure if needed)
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: false,
   })
 );
 
@@ -111,7 +123,7 @@ app.use(hpp());
 
 // Rate limiter
 const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
+  windowMs: 1 * 60 * 1000,
   max: 500,
   message: {
     success: false,
@@ -123,34 +135,6 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ✅ Static file serving
-// Profile images (can use normal caching)
-app.use(
-  "/uploads/profile",
-  (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Cross-Origin-Resource-Policy", "cross-origin");
-    next();
-  },
-  express.static(path.join(__dirname, "uploads/profile"))
-);
-
-// QR codes (disable caching, always return 200 OK)
-app.use(
-  "/uploads/qrcodes",
-  (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Cross-Origin-Resource-Policy", "cross-origin");
-    next();
-  },
-  express.static(path.join(__dirname, "uploads/qrcodes"), {
-    etag: false,
-    lastModified: false,
-    cacheControl: false,
-    maxAge: 0,
-  })
-);
-
-// Fallback for other uploads
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -170,6 +154,7 @@ app.use("/api/v1/pages", pageRoutes);
 app.use("/api/v1/blogs", blogRoutes);
 app.use("/api/v1/machines", machineRoutes);
 app.use("/api/v1/homepage", homepageRoutes);
+app.use("/api/v1/aboutpage", aboutRoutes);
 
 // Global error handler
 app.use(errorHandler);

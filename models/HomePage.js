@@ -55,13 +55,12 @@ const whatWeDoSchema = new mongoose.Schema(
 
 const companyLogosSchema = new mongoose.Schema(
   {
-     companyLogosHeading: multiLangField,
-    companyLogo1: { type: String },
-    companyLogo2: { type: String },
-    companyLogo3: { type: String },
-    companyLogo4: { type: String },
-    companyLogo5: { type: String },
-    companyLogo6: { type: String },
+    companyLogosHeading: multiLangField,
+    logos: [
+      {
+        url: { type: String, default: "" }, // uploaded image URL
+      },
+    ],
   },
   { _id: false }
 );
@@ -111,7 +110,6 @@ const coreValuesSchema = new mongoose.Schema(
 
     coreTitle4: multiLangField,
     coreDes4: multiLangField,
-
   },
   { _id: false }
 );
@@ -121,8 +119,8 @@ const homepageSchema = new mongoose.Schema(
     heroSection: heroSchema,
     whoWeAreSection: whoWeAreSchema,
     whatWeDoSection: whatWeDoSchema,
-    companyLogosSection: companyLogosSchema,
-    definedUsSection: definedUsSchema, // ✅ new section
+    companyLogosSection: companyLogosSchema, // now supports infinite logos
+    definedUsSection: definedUsSchema,
     coreValuesSection: coreValuesSchema,
   },
   { timestamps: true }
