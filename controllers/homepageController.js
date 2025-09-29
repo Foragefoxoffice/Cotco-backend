@@ -34,75 +34,75 @@ exports.updateHomepage = async (req, res) => {
     let definedUsSection = JSON.parse(data.definedUsSection || "{}");
     let coreValuesSection = JSON.parse(data.coreValuesSection || "{}");
 
-    if (req.files?.bgFile) {
-      heroSection.bgUrl = saveFile(req.files.bgFile, "homepage");
-    }
+// Hero
+if (req.files?.bgFile) {
+  const savedPath = saveFile(req.files.bgFile, "homepage");
+  heroSection.bgUrl = savedPath;
 
-    if (req.files?.whoWeAreFile) {
-      whoWeAreSection.whoWeArebannerImage = saveFile(
-        req.files.whoWeAreFile,
-        "homepage"
-      );
-    }
+  // detect file type automatically
+  if (/\.(mp4|webm|mov|avi)$/i.test(savedPath)) {
+    heroSection.bgType = "video";
+  } else {
+    heroSection.bgType = "image";
+  }
+}
 
-    [
-      "whatWeDoIcon1",
-      "whatWeDoIcon2",
-      "whatWeDoIcon3",
-      "whatWeDoImg1",
-      "whatWeDoImg2",
-      "whatWeDoImg3",
-    ].forEach((field) => {
-      if (req.files?.[field])
-        whatWeDoSection[field] = saveFile(req.files[field], "homepage");
-    });
+// Who We Are
+if (req.files?.whoWeAreFile) {
+  whoWeAreSection.whoWeArebannerImage = saveFile(req.files.whoWeAreFile, "homepage");
+}
 
-    [
-      "companyLogo1",
-      "companyLogo2",
-      "companyLogo3",
-      "companyLogo4",
-      "companyLogo5",
-      "companyLogo6",
-    ].forEach((field) => {
-      if (req.files?.[field])
-        companyLogosSection[field] = saveFile(req.files[field], "homepage");
-    });
+// What We Do
+["Icon1File","Icon2File","Icon3File","Img1File","Img2File","Img3File"].forEach((field, idx) => {
+  const key = field.replace("File", ""); // → whatWeDoIcon1, whatWeDoImg1, etc.
+  if (req.files?.[`whatWeDo${field}`]) {
+    whatWeDoSection[`whatWeDo${key}`] = saveFile(req.files[`whatWeDo${field}`], "homepage");
+  }
+});
 
-    [
-      "definedUsLogo1",
-      "definedUsLogo2",
-      "definedUsLogo3",
-      "definedUsLogo4",
-      "definedUsLogo5",
-      "definedUsLogo6",
-    ].forEach((field) => {
-      if (req.files?.[field])
-        definedUsSection[field] = saveFile(req.files[field], "homepage");
-    });
+// Company Logos
+[1,2,3,4,5,6].forEach((i) => {
+  if (req.files?.[`companyLogo${i}File`]) {
+    companyLogosSection[`companyLogo${i}`] =
+      saveFile(req.files[`companyLogo${i}File`], "homepage");
+  }
+});
 
-    // ✅ Core Values image
-    if (req.files?.coreImage) {
-      coreValuesSection.coreImage = saveFile(req.files.coreImage, "homepage");
-    }
+
+// Defined Us
+[1,2,3,4,5,6].forEach((i) => {
+  if (req.files?.[`definedUsLogo${i}File`]) {
+    definedUsSection[`definedUsLogo${i}`] = saveFile(req.files[`definedUsLogo${i}File`], "homepage");
+  }
+});
+
+// Core Values
+if (req.files?.coreImageFile) {
+  coreValuesSection.coreImage = saveFile(req.files.coreImageFile, "homepage");
+}
 
     let homepage = await Homepage.findOne();
     if (!homepage) {
-      homepage = new Homepage({
-        heroSection,
-        whoWeAreSection,
-        whatWeDoSection,
-        companyLogosSection,
-        definedUsSection,
-        coreValuesSection,
-      });
-    } else {
-      homepage.heroSection = heroSection;
-      homepage.whoWeAreSection = whoWeAreSection;
-      homepage.whatWeDoSection = whatWeDoSection;
-      homepage.companyLogosSection = companyLogosSection;
-      homepage.definedUsSection = definedUsSection;
-      homepage.coreValuesSection = coreValuesSection;
+      homepage = new Homepage({});
+    }
+
+    if (Object.keys(heroSection).length) {
+      homepage.heroSection = { ...homepage.heroSection?.toObject(), ...heroSection };
+    }
+    if (Object.keys(whoWeAreSection).length) {
+      homepage.whoWeAreSection = { ...homepage.whoWeAreSection?.toObject(), ...whoWeAreSection };
+    }
+    if (Object.keys(whatWeDoSection).length) {
+      homepage.whatWeDoSection = { ...homepage.whatWeDoSection?.toObject(), ...whatWeDoSection };
+    }
+    if (Object.keys(companyLogosSection).length) {
+      homepage.companyLogosSection = { ...homepage.companyLogosSection?.toObject(), ...companyLogosSection };
+    }
+    if (Object.keys(definedUsSection).length) {
+      homepage.definedUsSection = { ...homepage.definedUsSection?.toObject(), ...definedUsSection };
+    }
+    if (Object.keys(coreValuesSection).length) {
+      homepage.coreValuesSection = { ...homepage.coreValuesSection?.toObject(), ...coreValuesSection };
     }
 
     await homepage.save();
@@ -111,3 +111,4 @@ exports.updateHomepage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+

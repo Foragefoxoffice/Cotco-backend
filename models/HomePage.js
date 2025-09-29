@@ -55,6 +55,7 @@ const whatWeDoSchema = new mongoose.Schema(
 
 const companyLogosSchema = new mongoose.Schema(
   {
+     companyLogosHeading: multiLangField,
     companyLogo1: { type: String },
     companyLogo2: { type: String },
     companyLogo3: { type: String },
@@ -67,6 +68,7 @@ const companyLogosSchema = new mongoose.Schema(
 
 const definedUsSchema = new mongoose.Schema(
   {
+    definedUsHeading: multiLangField,
     definedUsLogo1: { type: String },
     definedUsTitle1: multiLangField,
     definedUsDes1: multiLangField,
@@ -110,7 +112,6 @@ const coreValuesSchema = new mongoose.Schema(
     coreTitle4: multiLangField,
     coreDes4: multiLangField,
 
-    coreImage: { type: String },
   },
   { _id: false }
 );
