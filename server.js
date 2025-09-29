@@ -24,7 +24,8 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const sectionRoutes = require("./routes/sectionRoutes");
 const pageRoutes = require("./routes/pageRoutes");
 const blogRoutes = require("./routes/blogRoutes");
-const machineRoutes=require("./routes/machineRoutes");
+const machineRoutes = require("./routes/machineRoutes");
+const homepageRoutes = require("./routes/homepageRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -168,6 +169,7 @@ app.use("/api/v1/sections", sectionRoutes);
 app.use("/api/v1/pages", pageRoutes);
 app.use("/api/v1/blogs", blogRoutes);
 app.use("/api/v1/machines", machineRoutes);
+app.use("/api/v1/homepage", homepageRoutes);
 
 // Global error handler
 app.use(errorHandler);
