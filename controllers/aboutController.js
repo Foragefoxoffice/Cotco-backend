@@ -128,26 +128,16 @@ exports.updateAboutPage = async (req, res) => {
       aboutHistory = [];
     }
 
-    // normalize files: always array
-    let historyFiles = [];
-    if (req.files?.historyImages) {
-      historyFiles = Array.isArray(req.files.historyImages)
-        ? req.files.historyImages
-        : [req.files.historyImages];
-    }
-
     aboutHistory = aboutHistory.map((item, i) => {
       let image = "";
 
-      if (historyFiles[i] && historyFiles[i].name) {
-        // ✅ save matching file
-        image = saveFile(historyFiles[i], "history");
+      // ✅ match frontend naming: historyImage0, historyImage1 ...
+      if (req.files?.[`historyImage${i}`]) {
+        image = saveFile(req.files[`historyImage${i}`], "history");
       } else if (item.image && item.image.startsWith("/uploads/")) {
-        // ✅ keep DB path
-        image = item.image;
+        image = item.image; // keep path if valid
       } else if (existing?.aboutHistory?.[i]?.image) {
-        // ✅ fallback
-        image = existing.aboutHistory[i].image;
+        image = existing.aboutHistory[i].image; // fallback
       }
 
       return {
@@ -158,6 +148,7 @@ exports.updateAboutPage = async (req, res) => {
     });
 
     existing.aboutHistory = aboutHistory;
+
 
     // ---------------- TEAM ----------------
     // overwrite with safeParse result
