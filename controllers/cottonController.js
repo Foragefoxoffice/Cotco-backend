@@ -35,23 +35,37 @@ exports.updateCottonPage = async (req, res) => {
     let existing = await CottonPage.findOne();
     if (!existing) existing = new CottonPage({});
 
-    let cottonBanner = safeParse(data.cottonBanner, existing.cottonBanner || {});
-    let cottonSupplier = safeParse(data.cottonSupplier, existing.cottonSupplier || []);
+    let cottonBanner = safeParse(
+      data.cottonBanner,
+      existing.cottonBanner || {}
+    );
+    let cottonSupplier = safeParse(
+      data.cottonSupplier,
+      existing.cottonSupplier || []
+    );
     let cottonTrust = safeParse(data.cottonTrust, existing.cottonTrust || {});
-    let cottonMember = safeParse(data.cottonMember, existing.cottonMember || {});
+    let cottonMember = safeParse(
+      data.cottonMember,
+      existing.cottonMember || {}
+    );
 
     // ---------------- BANNER ----------------
     // Banner main image
     if (req.files?.cottonBannerImgFile) {
-      cottonBanner.cottonBannerImg = saveFile(req.files.cottonBannerImgFile, "cotton/banner");
+      cottonBanner.cottonBannerImg = saveFile(
+        req.files.cottonBannerImgFile,
+        "cotton/banner"
+      );
     } else if (cottonBanner.cottonBannerImg === "") {
       cottonBanner.cottonBannerImg = "";
     } else {
-      cottonBanner.cottonBannerImg = existing.cottonBanner?.cottonBannerImg || "";
+      cottonBanner.cottonBannerImg =
+        existing.cottonBanner?.cottonBannerImg || "";
     }
 
     // ✅ Banner Overview
-    cottonBanner.cottonBannerOverview = cottonBanner.cottonBannerOverview || existing.cottonBanner?.cottonBannerOverview || { en: "", vi: "" };
+    cottonBanner.cottonBannerOverview = cottonBanner.cottonBannerOverview ||
+      existing.cottonBanner?.cottonBannerOverview || { en: "", vi: "" };
 
     // Banner Slide Images (multi upload)
     let bannerSlidesFromBody = Array.isArray(cottonBanner.cottonBannerSlideImg)
@@ -67,26 +81,41 @@ exports.updateCottonPage = async (req, res) => {
     }
     cottonBanner.cottonBannerSlideImg = bannerSlidesFromBody;
 
-
     // ---------------- SUPPLIERS ----------------
     if (cottonSupplier.length > 0) {
       cottonSupplier = cottonSupplier.map((s, i) => {
-        // If a new file is uploaded -> save it
+        // ✅ Supplier Logo
         if (req.files?.[`cottonSupplierLogoFile${i}`]) {
-          s.cottonSupplierLogo = saveFile(req.files[`cottonSupplierLogoFile${i}`], "cotton/suppliers");
-        }
-        // If frontend sent base64 by mistake -> fallback to existing value
-        else if (s.cottonSupplierLogo?.startsWith("data:image")) {
-          s.cottonSupplierLogo = existing?.cottonSupplier?.[i]?.cottonSupplierLogo || "";
-        }
-        // If cleared -> empty
-        else if (s.cottonSupplierLogo === "") {
+          s.cottonSupplierLogo = saveFile(
+            req.files[`cottonSupplierLogoFile${i}`],
+            "cotton/suppliers/logos"
+          );
+        } else if (s.cottonSupplierLogo?.startsWith("data:image")) {
+          s.cottonSupplierLogo =
+            existing?.cottonSupplier?.[i]?.cottonSupplierLogo || "";
+        } else if (s.cottonSupplierLogo === "") {
           s.cottonSupplierLogo = "";
+        } else {
+          s.cottonSupplierLogo =
+            existing?.cottonSupplier?.[i]?.cottonSupplierLogo || "";
         }
-        // Otherwise keep existing DB path
-        else {
-          s.cottonSupplierLogo = existing?.cottonSupplier?.[i]?.cottonSupplierLogo || "";
+
+        // ✅ Supplier Background
+        if (req.files?.[`cottonSupplierBgFile${i}`]) {
+          s.cottonSupplierBg = saveFile(
+            req.files[`cottonSupplierBgFile${i}`],
+            "cotton/suppliers/bg"
+          );
+        } else if (s.cottonSupplierBg?.startsWith("data:image")) {
+          s.cottonSupplierBg =
+            existing?.cottonSupplier?.[i]?.cottonSupplierBg || "";
+        } else if (s.cottonSupplierBg === "") {
+          s.cottonSupplierBg = "";
+        } else {
+          s.cottonSupplierBg =
+            existing?.cottonSupplier?.[i]?.cottonSupplierBg || "";
         }
+
         return s;
       });
     }
@@ -105,12 +134,20 @@ exports.updateCottonPage = async (req, res) => {
     }
     cottonTrust.cottonTrustLogo = trustLogosFromBody;
 
-    // Trust Image (single)
+    // ✅ Trust Image (single, always save only real files)
     if (req.files?.cottonTrustImgFile) {
-      cottonTrust.cottonTrustImg = saveFile(req.files.cottonTrustImgFile, "cotton/trust");
+      cottonTrust.cottonTrustImg = saveFile(
+        req.files.cottonTrustImgFile,
+        "cotton/trust"
+      );
     } else if (cottonTrust.cottonTrustImg === "") {
+      // cleared by user
       cottonTrust.cottonTrustImg = "";
+    } else if (cottonTrust.cottonTrustImg?.startsWith("data:image")) {
+      // ignore base64 preview → keep existing DB value
+      cottonTrust.cottonTrustImg = existing.cottonTrust?.cottonTrustImg || "";
     } else {
+      // keep DB value if nothing changed
       cottonTrust.cottonTrustImg = existing.cottonTrust?.cottonTrustImg || "";
     }
 
@@ -129,7 +166,7 @@ exports.updateCottonPage = async (req, res) => {
     cottonMember.cottonMemberImg = memberImgsFromBody;
 
     // ---------------- SAVE ----------------
-    existing.cottonBanner = cottonBanner;  // ✅ includes bannerOverview + slides
+    existing.cottonBanner = cottonBanner; // ✅ includes bannerOverview + slides
     existing.cottonSupplier = cottonSupplier;
     existing.cottonTrust = cottonTrust;
     existing.cottonMember = cottonMember;
@@ -140,4 +177,3 @@ exports.updateCottonPage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-

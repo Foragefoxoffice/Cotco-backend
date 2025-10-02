@@ -18,7 +18,6 @@ const cottonBannerSchema = new mongoose.Schema(
   { _id: false }
 );
 
-
 // Supplier (∞ add)
 const cottonSupplierSchema = new mongoose.Schema(
   {
@@ -26,6 +25,7 @@ const cottonSupplierSchema = new mongoose.Schema(
     cottonSupplierLogoName: multiLangField,
     cottonSupplierDes: multiLangField,
     cottonSupplierLogo: { type: String, default: "" },
+    cottonSupplierBg: { type: String, default: "" }, // ✅ NEW
   },
   { _id: false }
 );

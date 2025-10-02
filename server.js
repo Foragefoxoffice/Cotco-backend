@@ -28,6 +28,7 @@ const machineRoutes = require("./routes/machineRoutes");
 const homepageRoutes = require("./routes/homepageRoutes");
 const aboutRoutes = require("./routes/aboutRoutes");
 const cottonPageRoutes = require("./routes/cottonRoutes");
+const fiberRoutes = require("./routes/fiberRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -157,6 +158,7 @@ app.use("/api/v1/machines", machineRoutes);
 app.use("/api/v1/homepage", homepageRoutes);
 app.use("/api/v1/aboutpage", aboutRoutes);
 app.use("/api/v1/cottonpage", cottonPageRoutes);
+app.use("/api/v1/fiberpage", fiberRoutes);
 
 // Global error handler
 app.use(errorHandler);
