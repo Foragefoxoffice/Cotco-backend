@@ -23,7 +23,7 @@ const cottonSupplierSchema = new mongoose.Schema(
   {
     cottonSupplierTitle: multiLangField,
     cottonSupplierLogoName: multiLangField,
-    cottonSupplierDes: multiLangField,
+    cottonSupplierDes: [multiLangField],
     cottonSupplierLogo: { type: String, default: "" },
     cottonSupplierBg: { type: String, default: "" }, // ✅ NEW
   },

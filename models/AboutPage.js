@@ -30,7 +30,7 @@ const aboutFounderSchema = new mongoose.Schema(
   {
     aboutFounderTitle: multiLangField,
     aboutFounderName: multiLangField,
-    aboutFounderDes: multiLangField,
+    aboutFounderDes: [multiLangField],
     founderImg1: { type: String, default: "" },
     founderImg2: { type: String, default: "" },
     founderImg3: { type: String, default: "" },
