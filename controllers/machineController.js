@@ -320,8 +320,11 @@ exports.updateMachinePage = async (req, res) => {
       }
     });
 
+    // ✅ process section images if replaced
     if (req.body.sections) {
-      req.body.sections = req.body.sections.map(cleanSection);
+      req.body.sections = await Promise.all(
+        req.body.sections.map((s) => processSectionFiles(s, req.files || {}))
+      );
     }
 
     const page = await MachinePage.findByIdAndUpdate(req.params.id, req.body, {
@@ -332,12 +335,14 @@ exports.updateMachinePage = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Page not found" });
+
     res.status(200).json({ success: true, data: page });
   } catch (err) {
     console.error("Update MachinePage Error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 exports.getMachinePages = async (req, res) => {
   try {

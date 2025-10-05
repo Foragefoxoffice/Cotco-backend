@@ -24,7 +24,6 @@ const blockSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// Table
 // Table cell with translations
 const tableCellSchema = new mongoose.Schema(
   {
@@ -46,6 +45,27 @@ const tableSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// ✅ NEW: Button schema
+const buttonSchema = new mongoose.Schema(
+  {
+    name: {
+      en: { type: String },
+      vn: { type: String },
+    },
+    link: { type: String },
+    align: {
+      type: String,
+      enum: ["left", "center", "right"],
+      default: "center",
+    },
+    variant: {
+      type: String,
+      enum: ["primary", "outline"],
+      default: "primary",
+    },
+  },
+  { _id: false }
+);
 
 /* ---------- Section Schema ---------- */
 const sectionSchema = new mongoose.Schema(
@@ -69,6 +89,7 @@ const sectionSchema = new mongoose.Schema(
         "specs",
         "faq",
         "custom",
+        "button", // ✅ added button type
       ],
     },
     title: { en: { type: String }, vn: { type: String } },
@@ -82,6 +103,7 @@ const sectionSchema = new mongoose.Schema(
     table: { type: tableSchema, default: undefined },
     listItems: { type: [listItemSchema], default: undefined },
     blocks: { type: [blockSchema], default: undefined },
+    button: { type: buttonSchema, default: undefined }, // ✅ added button
     tabs: {
       type: [
         new mongoose.Schema(
