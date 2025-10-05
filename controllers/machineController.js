@@ -350,15 +350,26 @@ exports.getMachinePages = async (req, res) => {
 
 exports.getMachinePage = async (req, res) => {
   try {
-    const page = await MachinePage.findOne({ slug: req.params.slug }).populate(
-      "category"
-    );
-    if (!page)
+    const param = req.params.slug; // could be slug OR MongoDB ObjectId
+    let page;
+
+    // If param looks like a Mongo ObjectId → findById
+    if (/^[0-9a-fA-F]{24}$/.test(param)) {
+      page = await MachinePage.findById(param).populate("category");
+    } else {
+      // Otherwise → treat it as a slug
+      page = await MachinePage.findOne({ slug: param }).populate("category");
+    }
+
+    if (!page) {
       return res
         .status(404)
         .json({ success: false, message: "Page not found" });
+    }
+
     res.status(200).json({ success: true, data: page });
   } catch (err) {
+    console.error("Get MachinePage Error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 };

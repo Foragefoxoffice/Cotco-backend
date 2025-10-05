@@ -40,7 +40,9 @@ router.delete("/categories/:id", deleteMachineCategory);
 router.post("/sections", createMachineSection);
 router.get("/sections", getMachineSections);
 router.get("/sections/:id", getMachineSection);
-router.put("/sections/:id", updateMachineSection);
+router.post("/pages/:id", updateMachinePage); // for multipart update
+router.put("/pages/:id", updateMachinePage);  // for JSON-only update
+
 router.delete("/sections/:id", deleteMachineSection);
 
 /* =========================================================

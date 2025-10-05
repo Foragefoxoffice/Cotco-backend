@@ -25,13 +25,27 @@ const blockSchema = new mongoose.Schema(
 );
 
 // Table
-const tableSchema = new mongoose.Schema(
+// Table cell with translations
+const tableCellSchema = new mongoose.Schema(
   {
-    header: { type: String },
-    rows: [[String]],
+    en: { type: String },
+    vn: { type: String },
   },
   { _id: false }
 );
+
+// Table schema
+const tableSchema = new mongoose.Schema(
+  {
+    header: {
+      en: { type: String },
+      vn: { type: String },
+    },
+    rows: [[tableCellSchema]], // array of array of translated cells
+  },
+  { _id: false }
+);
+
 
 /* ---------- Section Schema ---------- */
 const sectionSchema = new mongoose.Schema(
