@@ -19,14 +19,16 @@ const { protect, authorize, requireVerifiedEmail } = require('../middleware/auth
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
-
-// Protected routes (require authentication)
-router.get('/me', protect, getMe);
-router.get('/logout', protect, logout);
-router.put('/updatedetails', protect, requireVerifiedEmail, updateDetails);
-router.put('/updatepassword', protect, requireVerifiedEmail, updatePassword);
 router.post('/forgotpassword', forgotPassword);
 router.post('/resetpassword', resetPassword);
 
+// Protected routes
+router.get('/me', protect, getMe);
+router.post('/logout', protect, logout);
+router.put('/updatedetails', protect, requireVerifiedEmail, updateDetails);
+router.put('/updatepassword', protect, requireVerifiedEmail, updatePassword);
 
 module.exports = router;
+
+
+

@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  employeeId: {
+    type: String,
+    unique: true,  // ✅ Each employee should have a unique ID
+    required: [true, "Please provide an Employee ID"],
+    trim: true
+  },
   name: {
     type: String,
     required: [true, 'Please add a name'],
@@ -25,11 +31,20 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false
   },
+
+  // ✅ Role reference
   role: {
-    type: String,
-    enum: ['supervisor', 'admin'],
-    default: 'supervisor'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Role",
+    required: true
   },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
+    required: true
+  },
+
   phone: {
     type: String,
     required: [true, 'Please add a phone number'],
@@ -40,7 +55,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
-  
   isVerified: {
     type: Boolean,
     default: false
@@ -59,7 +73,7 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-// Encrypt password before saving
+// ✅ Encrypt password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
@@ -67,12 +81,12 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Compare passwords
+// ✅ Compare passwords
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Auto-update timestamp
+// ✅ Auto-update timestamp
 userSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();

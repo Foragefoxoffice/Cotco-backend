@@ -7,30 +7,30 @@ const ErrorResponse = require("../utils/errorResponse");
 // @route   POST /api/v1/categories
 // @access  Private
 exports.createCategory = asyncHandler(async (req, res, next) => {
-  if (req.body._id) {
-    delete req.body._id;
-  }
+  if (req.body._id) delete req.body._id;
 
   // ✅ Ensure both language objects exist
   if (!req.body.name) req.body.name = {};
   if (!req.body.name.en) req.body.name.en = "";
   if (!req.body.name.vn) req.body.name.vn = "";
 
+  // ✅ Check duplicate EN name
   const existingByName = await Category.findOne({
     "name.en": req.body.name.en.trim(),
   });
+  if (existingByName) {
+    return next(new ErrorResponse("Category name already exists", 400));
+  }
 
   // ✅ Ensure slug uniqueness
   let slug = req.body.slug.trim();
   let existingSlug = await Category.findOne({ slug });
   let counter = 1;
-
   while (existingSlug) {
     slug = `${req.body.slug}-${counter}`;
     existingSlug = await Category.findOne({ slug });
     counter++;
   }
-
   req.body.slug = slug;
 
   const category = await Category.create(req.body);
@@ -42,7 +42,7 @@ exports.createCategory = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/categories
 // @access  Public
 exports.getCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find();
+  const categories = await Category.find().populate("mainCategory", "name slug");
   res.status(200).json({
     success: true,
     count: categories.length,
@@ -54,23 +54,18 @@ exports.getCategories = asyncHandler(async (req, res) => {
 // @route   GET /api/v1/categories/:id
 // @access  Public
 exports.getCategory = asyncHandler(async (req, res, next) => {
-  const category = await Category.findById(req.params.id);
+  const category = await Category.findById(req.params.id).populate("mainCategory", "name slug");
   if (!category) {
     return next(new ErrorResponse("Category not found", 404));
   }
-  res.status(200).json({
-    success: true,
-    data: category,
-  });
+  res.status(200).json({ success: true, data: category });
 });
 
 // @desc    Update category
 // @route   PUT /api/v1/categories/:id
 // @access  Private
 exports.updateCategory = asyncHandler(async (req, res, next) => {
-  if (req.body._id) {
-    delete req.body._id;
-  }
+  if (req.body._id) delete req.body._id;
 
   // ✅ If name is changing, check duplicates
   if (req.body.name?.en || req.body.name?.vn) {
@@ -102,7 +97,7 @@ exports.updateCategory = asyncHandler(async (req, res, next) => {
   const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
-  });
+  }).populate("mainCategory", "name slug");
 
   if (!category) {
     return next(new ErrorResponse("Category not found", 404));

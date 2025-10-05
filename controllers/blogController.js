@@ -17,6 +17,7 @@ exports.getBlogs = async (req, res) => {
     const blogs = await Blog.find(query)
       .populate("author", "name email")
       .populate("category", "name")
+      .populate("mainCategory")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: blogs });

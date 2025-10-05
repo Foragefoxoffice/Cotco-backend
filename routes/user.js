@@ -20,14 +20,14 @@ router.use(protect);
 // Only apply authorize('admin') to routes that need it
 router
   .route('/')
-  .get(authorize('admin'), advancedResults(User), getUsers)
+  .get(advancedResults(User), getUsers)
   .post(authorize('admin'), createUser);
 
 router
   .route('/:id')
-  .get(authorize('admin', 'user'), getUser)  // Both admin and user can get single user
-  .put(authorize('admin'), updateUser)
-  .delete(authorize('admin'), deleteUser);
+  .get(getUser)  // Both admin and user can get single user
+  .put( updateUser)
+  .delete( deleteUser);
 
 
 module.exports = router;

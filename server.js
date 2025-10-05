@@ -11,6 +11,8 @@ const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
 const colors = require("colors");
 const { Server } = require("socket.io");
+const fs = require("fs");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // Custom modules
 const connectDB = require("./config/db");
@@ -34,6 +36,9 @@ const privacyRoutes = require("./routes/privacyRoutes");
 const termsRoutes = require("./routes/termsRoutes");
 const headerRoutes = require("./routes/headerRoutes");
 const footerRoutes = require("./routes/footerRoutes");
+const mainCategoryRoutes=require("./routes/mainCategoryRoutes");
+const contactEntriesRoutes = require("./routes/contactEntriesRoutes");
+const roleRoutes = require("./routes/roleRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -169,6 +174,48 @@ app.use("/api/v1/privacypage", privacyRoutes);
 app.use("/api/v1/termspage", termsRoutes);
 app.use("/api/v1/headerpage", headerRoutes);
 app.use("/api/v1/footerpage", footerRoutes);
+app.use("/api/v1/maincategories", mainCategoryRoutes);
+app.use("/api/v1/contactentries", contactEntriesRoutes);
+app.use("/api/v1/roles", roleRoutes);
+
+app.post("/api/v1/chatbot", async (req, res) => {
+  try {
+    const { question } = req.body;
+    if (!question) {
+      return res.status(400).json({ success: false, error: "Missing question" });
+    }
+
+    const knowledge = fs.readFileSync("knowledge.txt", "utf8");
+
+    const prompt = `
+You are a chatbot for a cotton and fiber company.
+Your ONLY source of truth is the following knowledge. 
+If the question cannot be answered from the knowledge, say exactly: 
+"I don't know, please check our website."
+
+Knowledge:
+${knowledge}
+
+Now answer the question strictly from the knowledge above.
+
+Question: ${question}
+Answer:
+    `;
+
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "gemma:2b", prompt, stream: false }),
+    });
+
+    const data = await response.json();
+
+    res.json({ success: true, answer: data.response });
+  } catch (err) {
+    console.error("❌ Chatbot error:", err);
+    res.status(500).json({ success: false, error: err.message || "Chatbot failed" });
+  }
+});
 
 // Global error handler
 app.use(errorHandler);

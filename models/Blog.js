@@ -24,13 +24,26 @@ const blogSchema = new mongoose.Schema({
   ],
   status: { type: String, enum: ["draft", "published"], default: "draft" },
   author: { type: String },
-  category: { type: String, required: true },
+
+  // ✅ Reference to Category and MainCategory
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: true,
+  },
+  mainCategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "MainCategory",
+    required: true,
+  },
+
   tags: [String],
   seo: {
     title: { en: String, vn: String },
     description: { en: String, vn: String },
   },
   publishedAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 blogSchema.pre("save", function (next) {
