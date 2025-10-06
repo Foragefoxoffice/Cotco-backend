@@ -33,8 +33,8 @@ module.exports = blockSchema;
 
 /**
  Example content formats:
- - text: { en: "Simple text", vn: "Văn bản" }
- - richtext: { en: "<p>Rich HTML</p>", vn: "<p>HTML phong phú</p>" }
+ - text: { en: "Simple text", vi: "Văn bản" }
+ - richtext: { en: "<p>Rich HTML</p>", vi: "<p>HTML phong phú</p>" }
  - image: { url: "/uploads/img.jpg", alt: "Alt text" }
  - gallery: [{ url: "...", alt: "..." }]
  - list: { items: ["Item 1", "Item 2"] }

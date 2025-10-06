@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const blogSchema = new mongoose.Schema({
   title: {
     en: { type: String, required: true },
-    vn: { type: String, required: true },
+    vi: { type: String, required: true },
   },
   slug: { type: String, required: true, unique: true, trim: true },
   excerpt: {
     en: { type: String },
-    vn: { type: String },
+    vi: { type: String },
   },
   coverImage: {
     url: { type: String },
@@ -37,8 +37,8 @@ const blogSchema = new mongoose.Schema({
 
   tags: [String],
   seo: {
-    title: { en: String, vn: String },
-    description: { en: String, vn: String },
+    title: { en: String, vi: String },
+    description: { en: String, vi: String },
   },
 
   // ✅ Fixed fields

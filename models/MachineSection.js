@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const listItemSchema = new mongoose.Schema(
   {
     en: { type: String },
-    vn: { type: String },
+    vi: { type: String },
     icon: { type: String },
   },
   { _id: false }
@@ -15,8 +15,8 @@ const listItemSchema = new mongoose.Schema(
 // Blocks (cards)
 const blockSchema = new mongoose.Schema(
   {
-    title: { en: { type: String }, vn: { type: String } },
-    description: { en: { type: String }, vn: { type: String } },
+    title: { en: { type: String }, vi: { type: String } },
+    description: { en: { type: String }, vi: { type: String } },
     image: { type: String },
     link: { type: String },
     order: { type: Number, default: 0 },
@@ -28,7 +28,7 @@ const blockSchema = new mongoose.Schema(
 const tableCellSchema = new mongoose.Schema(
   {
     en: { type: String },
-    vn: { type: String },
+    vi: { type: String },
   },
   { _id: false }
 );
@@ -38,7 +38,7 @@ const tableSchema = new mongoose.Schema(
   {
     header: {
       en: { type: String },
-      vn: { type: String },
+      vi: { type: String },
     },
     rows: [[tableCellSchema]], // array of array of translated cells
   },
@@ -50,7 +50,7 @@ const buttonSchema = new mongoose.Schema(
   {
     name: {
       en: { type: String },
-      vn: { type: String },
+      vi: { type: String },
     },
     link: { type: String },
     align: {
@@ -92,12 +92,12 @@ const sectionSchema = new mongoose.Schema(
         "button", // ✅ added button type
       ],
     },
-    title: { en: { type: String }, vn: { type: String } },
-    description: { en: { type: String }, vn: { type: String } },
+    title: { en: { type: String }, vi: { type: String } },
+    description: { en: { type: String }, vi: { type: String } },
     image: { type: String },
     order: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
-    richtext: { en: { type: String }, vn: { type: String } },
+    richtext: { en: { type: String }, vi: { type: String } },
 
     // optional sub-structures
     table: { type: tableSchema, default: undefined },
@@ -108,7 +108,7 @@ const sectionSchema = new mongoose.Schema(
       type: [
         new mongoose.Schema(
           {
-            tabTitle: { en: { type: String }, vn: { type: String } },
+            tabTitle: { en: { type: String }, vi: { type: String } },
             sections: { type: [Object], default: undefined }, // cleaned recursively
           },
           { _id: false }

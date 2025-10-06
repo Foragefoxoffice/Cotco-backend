@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const blockSchema = new mongoose.Schema({
   sectionType: { type: String, required: true },
   values: {
-    type: Object, // Example: { title: { en: "Hello", vn: "Xin chào" } }
+    type: Object, // Example: { title: { en: "Hello", vi: "Xin chào" } }
     required: true
   },
   position: { type: Number, default: 0 }
@@ -13,7 +13,7 @@ const pageSchema = new mongoose.Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
   title: {
     en: { type: String, required: true },
-    vn: { type: String, required: true }
+    vi: { type: String, required: true }
   },
   slug: { type: String, required: true, unique: true, trim: true },
   blocks: [blockSchema],

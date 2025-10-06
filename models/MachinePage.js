@@ -9,11 +9,11 @@ const machinePageSchema = new mongoose.Schema({
   },
   title: {
     en: { type: String, required: true },
-    vn: { type: String },
+    vi: { type: String },
   },
   description: {
     en: { type: String },
-    vn: { type: String },
+    vi: { type: String },
   },
   slug: { type: String, required: true, unique: true },
   sections: { type: [machineSectionSchema], default: undefined },

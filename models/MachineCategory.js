@@ -3,11 +3,11 @@ const mongoose = require("mongoose");
 const MachineCategorySchema = new mongoose.Schema({
   name: {
     en: { type: String, required: true, trim: true },
-    vn: { type: String, trim: true },
+    vi: { type: String, trim: true },
   },
   description: {
     en: { type: String, default: "" },
-    vn: { type: String, default: "" },
+    vi: { type: String, default: "" },
   },
   slug: { type: String, required: true, unique: true, trim: true },
   icon: { type: String, default: "" },
