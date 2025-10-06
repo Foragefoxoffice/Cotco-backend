@@ -10,7 +10,7 @@ const safeParse = (val, fallback) => {
   }
 };
 
-// File save helper
+// Save uploaded file
 const saveFile = (file, folder = "privacy") => {
   const uploadDir = path.join(__dirname, `../uploads/${folder}`);
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,37 +36,36 @@ exports.updatePrivacyPage = async (req, res) => {
     let existing = await PrivacyPage.findOne();
     if (!existing) existing = new PrivacyPage({});
 
-    // Handle privacyBanner
-    let privacyBanner = safeParse(data.privacyBanner, existing.privacyBanner || {});
+    // ✅ Handle Banner
+    let privacyBanner = safeParse(
+      data.privacyBanner,
+      existing.privacyBanner || {}
+    );
     if (req.files?.privacyBannerMediaFile) {
-      privacyBanner.privacyBannerMedia = saveFile(req.files.privacyBannerMediaFile, "privacy");
+      privacyBanner.privacyBannerMedia = saveFile(
+        req.files.privacyBannerMediaFile,
+        "privacy"
+      );
     } else {
       privacyBanner.privacyBannerMedia =
-        privacyBanner.privacyBannerMedia || existing?.privacyBanner?.privacyBannerMedia || "";
+        privacyBanner.privacyBannerMedia ||
+        existing?.privacyBanner?.privacyBannerMedia ||
+        "";
     }
 
     existing.privacyBanner = privacyBanner;
 
-    // Handle other sections
-    const sections = [
-      "generalInformation",
-      "website",
-      "cookies",
-      "socialMedia",
-      "app",
-      "integration",
-      "changesPrivacy",
-    ];
-
-    sections.forEach((sec) => {
-      existing[sec] = safeParse(
-        data[sec],
-        existing[sec] || { content: { en: "", vi: "" } }
-      );
-    });
+    // ✅ Handle Policies (Array)
+    existing.privacyPolicies = safeParse(
+      data.privacyPolicies,
+      existing.privacyPolicies || []
+    );
 
     await existing.save();
-    res.json({ message: "Privacy Page updated successfully", privacy: existing });
+    res.json({
+      message: "Privacy Page updated successfully",
+      privacy: existing,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

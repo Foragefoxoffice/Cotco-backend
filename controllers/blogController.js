@@ -18,7 +18,7 @@ exports.getBlogs = async (req, res) => {
       .populate("author", "name email")
       .populate("category", "name")
       .populate("mainCategory")
-      .sort({ createdAt: -1 });
+      .sort({ publishedAt: -1 });
 
     res.json({ success: true, data: blogs });
   } catch (error) {
@@ -54,8 +54,19 @@ exports.getBlogBySlug = async (req, res) => {
  */
 exports.createBlog = async (req, res) => {
   try {
-    const blog = new Blog(req.body);
+    const data = req.body;
+
+    // ✅ Always ensure timestamps
+    const now = new Date();
+
+    data.createdAt = data.createdAt || now;
+    data.publishedAt = now; // force unique recency
+    data.updatedAt = now;
+
+    // Even if it's a draft, keep publishedAt for sorting
+    const blog = new Blog(data);
     await blog.save();
+
     res.status(201).json({ success: true, data: blog });
   } catch (error) {
     console.error("Error creating blog:", error);

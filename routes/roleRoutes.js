@@ -1,5 +1,4 @@
 const express = require("express");
-const router = express.Router();
 const {
   createRole,
   getRoles,
@@ -7,12 +6,17 @@ const {
   updateRole,
   deleteRole,
 } = require("../controllers/roleController");
+const { protect } = require("../middleware/auth"); // ✅ Import your auth middleware
 
-// ROLE CRUD ROUTES
-router.post("/", createRole);       
-router.get("/", getRoles);         
-router.get("/:id", getRole);      
-router.put("/:id", updateRole);    
-router.delete("/:id", deleteRole);  
+const router = express.Router();
+
+// Public routes (optional)
+router.get("/", getRoles);
+router.get("/:id", getRole);
+
+// Protected routes (only logged-in users can modify)
+router.post("/", protect, createRole);
+router.put("/:id", protect, updateRole);
+router.delete("/:id", protect, deleteRole);
 
 module.exports = router;

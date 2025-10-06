@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const blockSchema = require("./Block");
 
 const blogSchema = new mongoose.Schema({
   title: {
@@ -17,7 +16,7 @@ const blogSchema = new mongoose.Schema({
   },
   blocks: [
     {
-      type: { type: String, required: true }, // richtext, image, list, etc.
+      type: { type: String, required: true },
       content: { type: Object, required: true },
       position: { type: Number, default: 0 },
     },
@@ -25,7 +24,6 @@ const blogSchema = new mongoose.Schema({
   status: { type: String, enum: ["draft", "published"], default: "draft" },
   author: { type: String },
 
-  // ✅ Reference to Category and MainCategory
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
@@ -42,15 +40,27 @@ const blogSchema = new mongoose.Schema({
     title: { en: String, vn: String },
     description: { en: String, vn: String },
   },
-  publishedAt: { type: Date, default: Date.now },
+
+  // ✅ Fixed fields
+  publishedAt: { type: Date },
+  createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
+// ✅ Automatically set timestamps properly
 blogSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
+
+  // If publishing a new blog or switching to published
   if (this.status === "published" && !this.publishedAt) {
     this.publishedAt = Date.now();
   }
+
+  // Fallback: ensure publishedAt exists even for drafts (helps sorting)
+  if (!this.publishedAt) {
+    this.publishedAt = this.createdAt || Date.now();
+  }
+
   next();
 });
 

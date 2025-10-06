@@ -1,34 +1,52 @@
-const express = require('express');
+const express = require("express");
 const {
   register,
   login,
   getMe,
-  logout,
-  verifyEmail,
-  resendVerification,
   updateDetails,
   updatePassword,
-forgotPassword,
-resetPassword 
-} = require('../controllers/auth');
+  forgotPassword,
+  resetPassword,
+  logout,
+} = require("../controllers/auth");
+const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-const { protect, authorize, requireVerifiedEmail } = require('../middleware/auth');
+/**
+ * ============================
+ *  PUBLIC ROUTES
+ * ============================
+ */
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
-router.post('/forgotpassword', forgotPassword);
-router.post('/resetpassword', resetPassword);
+// Register a new user (admin assigns role)
+router.post("/register", register);
 
-// Protected routes
-router.get('/me', protect, getMe);
-router.post('/logout', protect, logout);
-router.put('/updatedetails', protect, requireVerifiedEmail, updateDetails);
-router.put('/updatepassword', protect, requireVerifiedEmail, updatePassword);
+// Login user
+router.post("/login", login);
+
+// Forgot password - send OTP to email
+router.post("/forgot-password", forgotPassword);
+
+// Reset password using OTP
+router.post("/reset-password", resetPassword);
+
+/**
+ * ============================
+ *  PROTECTED ROUTES
+ * ============================
+ */
+
+// Get current logged-in user info
+router.get("/me", protect, getMe);
+
+// Update profile details
+router.put("/update-details", protect, updateDetails);
+
+// Update password (while logged in)
+router.put("/update-password", protect, updatePassword);
+
+// Logout user
+router.get("/logout", protect, logout);
 
 module.exports = router;
-
-
-

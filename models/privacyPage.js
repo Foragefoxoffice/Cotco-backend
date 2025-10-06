@@ -21,23 +21,26 @@ const privacyBannerSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const sectionSchema = new mongoose.Schema(
+// ✅ Privacy Policy schema (array)
+const privacyPolicySchema = new mongoose.Schema(
   {
-    content: multiLangRichText,
+    policyTitle: {
+      en: { type: String, default: "" },
+      vi: { type: String, default: "" },
+    },
+    policyContent: {
+      en: { type: String, default: "" },
+      vi: { type: String, default: "" },
+    },
   },
   { _id: false }
 );
 
+// ✅ Final model with only banner + policies
 const privacyPageSchema = new mongoose.Schema(
   {
     privacyBanner: privacyBannerSchema,
-    generalInformation: sectionSchema,
-    website: sectionSchema,
-    cookies: sectionSchema,
-    socialMedia: sectionSchema,
-    app: sectionSchema,
-    integration: sectionSchema,
-    changesPrivacy: sectionSchema,
+    privacyPolicies: [privacyPolicySchema],
   },
   { timestamps: true }
 );

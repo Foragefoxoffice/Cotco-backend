@@ -12,14 +12,15 @@ const hpp = require("hpp");
 const colors = require("colors");
 const { Server } = require("socket.io");
 const fs = require("fs");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 // Custom modules
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/error");
 const sanitizeInput = require("./middleware/sanitizeInput");
 
-// Route files
+// ===== Route files =====
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -36,20 +37,18 @@ const privacyRoutes = require("./routes/privacyRoutes");
 const termsRoutes = require("./routes/termsRoutes");
 const headerRoutes = require("./routes/headerRoutes");
 const footerRoutes = require("./routes/footerRoutes");
-const mainCategoryRoutes=require("./routes/mainCategoryRoutes");
+const mainCategoryRoutes = require("./routes/mainCategoryRoutes");
 const contactEntriesRoutes = require("./routes/contactEntriesRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 
-// Connect to MongoDB
+// ===== Connect to MongoDB =====
 connectDB();
 
-// Init express app
+// ===== Initialize app =====
 const app = express();
-
-// Create HTTP server for WebSocket
 const httpServer = http.createServer(app);
 
-// Initialize Socket.IO server
+// ===== Socket.IO =====
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -62,27 +61,8 @@ const io = new Server(httpServer, {
   },
 });
 
-// ✅ FIXED express-fileupload config
-app.use(
-  fileUpload({
-    createParentPath: true,
-    useTempFiles: true,
-    tempFileDir: "/tmp/",
-    limits: {
-      fileSize: 50 * 1024 * 1024, // 50MB per file
-      files: 100, // allow up to 100 files in one request
-      fields: 2000, // allow many JSON fields
-    },
-    abortOnLimit: false,
-    preserveExtension: true,
-    safeFileNames: true,
-  })
-);
-
-// Attach io to app
 app.set("io", io);
 
-// Handle WebSocket connections
 io.on("connection", (socket) => {
   console.log(`🟢 Socket connected: ${socket.id}`);
   socket.on("disconnect", () => {
@@ -90,7 +70,20 @@ io.on("connection", (socket) => {
   });
 });
 
-// ========== CORS Configuration ========== //
+// ===== File Upload =====
+app.use(
+  fileUpload({
+    createParentPath: true,
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+    limits: { fileSize: 50 * 1024 * 1024, files: 100, fields: 2000 },
+    abortOnLimit: false,
+    preserveExtension: true,
+    safeFileNames: true,
+  })
+);
+
+// ===== CORS =====
 const allowedOrigins = [
   "http://localhost:9002",
   "http://localhost:5174",
@@ -100,11 +93,8 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+      else callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -112,18 +102,14 @@ app.use(
   })
 );
 
-// Middleware
+// ===== Middlewares =====
 app.use(express.json({ limit: "2gb" }));
 app.use(express.urlencoded({ extended: true, limit: "2gb" }));
 app.use(cookieParser());
-
-if (process.env.NODE_ENV === "development") {
-  app.use(morgan("dev"));
-}
-
 app.use(sanitizeInput);
 
-// ✅ Helmet fixed
+if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
+
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -133,20 +119,21 @@ app.use(
 
 app.use(hpp());
 
-// Rate limiter
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 500,
-  message: {
-    success: false,
-    error: "Too many requests, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(limiter);
+// ===== Rate Limiter =====
+app.use(
+  rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 500,
+    message: {
+      success: false,
+      error: "Too many requests, please try again later.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 
-// ✅ Static file serving
+// ===== Static Files =====
 app.use(
   "/uploads",
   (req, res, next) => {
@@ -157,50 +144,58 @@ app.use(
   express.static(path.join(__dirname, "uploads"))
 );
 
-// API Routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/users", userRoutes);
-app.use("/api/v1/categories", categoryRoutes);
-app.use("/api/v1/sections", sectionRoutes);
-app.use("/api/v1/pages", pageRoutes);
-app.use("/api/v1/blogs", blogRoutes);
-app.use("/api/v1/machines", machineRoutes);
-app.use("/api/v1/homepage", homepageRoutes);
-app.use("/api/v1/aboutpage", aboutRoutes);
-app.use("/api/v1/cottonpage", cottonPageRoutes);
-app.use("/api/v1/fiberpage", fiberRoutes);
-app.use("/api/v1/contactpage", contactRoutes);
-app.use("/api/v1/privacypage", privacyRoutes);
-app.use("/api/v1/termspage", termsRoutes);
-app.use("/api/v1/headerpage", headerRoutes);
-app.use("/api/v1/footerpage", footerRoutes);
-app.use("/api/v1/maincategories", mainCategoryRoutes);
-app.use("/api/v1/contactentries", contactEntriesRoutes);
-app.use("/api/v1/roles", roleRoutes);
+// ===== Helper: Safe Route Loader =====
+function safeUse(routePath, router) {
+  if (typeof router !== "function") {
+    console.error(`❌ Invalid route handler at: ${routePath}`);
+    return;
+  }
+  app.use(routePath, router);
+}
 
+// ===== Register Routes Safely =====
+safeUse("/api/v1/auth", authRoutes);
+safeUse("/api/v1/users", userRoutes);
+safeUse("/api/v1/categories", categoryRoutes);
+safeUse("/api/v1/sections", sectionRoutes);
+safeUse("/api/v1/pages", pageRoutes);
+safeUse("/api/v1/blogs", blogRoutes);
+safeUse("/api/v1/machines", machineRoutes);
+safeUse("/api/v1/homepage", homepageRoutes);
+safeUse("/api/v1/aboutpage", aboutRoutes);
+safeUse("/api/v1/cottonpage", cottonPageRoutes);
+safeUse("/api/v1/fiberpage", fiberRoutes);
+safeUse("/api/v1/contactpage", contactRoutes);
+safeUse("/api/v1/privacypage", privacyRoutes);
+safeUse("/api/v1/termspage", termsRoutes);
+safeUse("/api/v1/headerpage", headerRoutes);
+safeUse("/api/v1/footerpage", footerRoutes);
+safeUse("/api/v1/maincategories", mainCategoryRoutes);
+safeUse("/api/v1/contactentries", contactEntriesRoutes);
+safeUse("/api/v1/roles", roleRoutes);
+
+// ===== Chatbot Endpoint =====
 app.post("/api/v1/chatbot", async (req, res) => {
   try {
     const { question } = req.body;
-    if (!question) {
-      return res.status(400).json({ success: false, error: "Missing question" });
-    }
+    if (!question)
+      return res
+        .status(400)
+        .json({ success: false, error: "Missing question" });
 
     const knowledge = fs.readFileSync("knowledge.txt", "utf8");
-
     const prompt = `
 You are a chatbot for a cotton and fiber company.
-Your ONLY source of truth is the following knowledge. 
-If the question cannot be answered from the knowledge, say exactly: 
+Your ONLY source of truth is the following knowledge.
+If the question cannot be answered from the knowledge, say:
 "I don't know, please check our website."
 
 Knowledge:
 ${knowledge}
 
-Now answer the question strictly from the knowledge above.
-
 Question: ${question}
 Answer:
-    `;
+`;
 
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
@@ -209,18 +204,19 @@ Answer:
     });
 
     const data = await response.json();
-
     res.json({ success: true, answer: data.response });
   } catch (err) {
     console.error("❌ Chatbot error:", err);
-    res.status(500).json({ success: false, error: err.message || "Chatbot failed" });
+    res
+      .status(500)
+      .json({ success: false, error: err.message || "Chatbot failed" });
   }
 });
 
-// Global error handler
+// ===== Global Error Handler =====
 app.use(errorHandler);
 
-// Server listen
+// ===== Start Server =====
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(
@@ -229,7 +225,7 @@ httpServer.listen(PORT, () => {
   );
 });
 
-// Handle unhandled promise rejections
+// ===== Handle Unhandled Promise Rejections =====
 process.on("unhandledRejection", (err) => {
   console.error(`❌ Unhandled Rejection: ${err.message}`.red);
   httpServer.close(() => process.exit(1));
