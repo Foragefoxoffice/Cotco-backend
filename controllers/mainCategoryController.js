@@ -6,28 +6,27 @@ const ErrorResponse = require("../utils/errorResponse");
 
 // Utility: ensure /public/uploads exists
 const ensureUploadDir = () => {
-  const uploadDir = path.join(__dirname, "..", "uploads","maincategory");
+  const uploadDir = path.join(__dirname, "..", "uploads", "maincategory");
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
   return uploadDir;
 };
 
-// Utility: normalize FormData fields into nested objects
+// ✅ Normalize incoming form-data fields
 const normalizeBody = (body) => {
   const newBody = { ...body };
 
-  // Handle name.en / name.vn
-  if (body["name.en"] || body["name.vn"]) {
+  // ✅ Fix: use name.en / name.vi instead of vn
+  if (body["name.en"] || body["name.vi"]) {
     newBody.name = {
       en: body["name.en"] || "",
-      vn: body["name.vn"] || "",
+      vi: body["name.vi"] || "",
     };
     delete newBody["name.en"];
-    delete newBody["name.vn"];
+    delete newBody["name.vi"];
   }
 
-  // Handle bgImage.alt
   if (body["bgImage.alt"]) {
     newBody.bgImage = {
       ...(newBody.bgImage || {}),
@@ -39,13 +38,10 @@ const normalizeBody = (body) => {
   return newBody;
 };
 
-// @desc    Create main category
-// @route   POST /api/v1/main-categories
-// @access  Private
+// ✅ CREATE
 exports.createMainCategory = asyncHandler(async (req, res, next) => {
   if (req.body._id) delete req.body._id;
 
-  // ✅ Normalize incoming fields
   req.body = normalizeBody(req.body);
 
   if (!req.body.name?.en) {
@@ -60,7 +56,7 @@ exports.createMainCategory = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse("Main category name already exists", 400));
   }
 
-  // ✅ Ensure slug uniqueness
+  // ✅ Ensure unique slug
   let slug = req.body.slug?.trim();
   if (!slug) {
     return next(new ErrorResponse("Slug is required", 400));
@@ -81,7 +77,7 @@ exports.createMainCategory = asyncHandler(async (req, res, next) => {
     const fileName = `${Date.now()}-${file.name}`;
     const filePath = path.join(uploadDir, fileName);
 
-    await file.mv(filePath); // save locally
+    await file.mv(filePath);
 
     req.body.bgImage = {
       url: `/uploads/maincategory/${fileName}`,
@@ -90,13 +86,10 @@ exports.createMainCategory = asyncHandler(async (req, res, next) => {
   }
 
   const mainCategory = await MainCategory.create(req.body);
-
   res.status(201).json({ success: true, data: mainCategory });
 });
 
-// @desc    Get all main categories
-// @route   GET /api/v1/main-categories
-// @access  Public
+// ✅ READ (All)
 exports.getMainCategories = asyncHandler(async (req, res) => {
   const mainCategories = await MainCategory.find();
   res.status(200).json({
@@ -106,9 +99,7 @@ exports.getMainCategories = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get single main category
-// @route   GET /api/v1/main-categories/:id
-// @access  Public
+// ✅ READ (Single)
 exports.getMainCategory = asyncHandler(async (req, res, next) => {
   const mainCategory = await MainCategory.findById(req.params.id);
   if (!mainCategory) {
@@ -117,22 +108,19 @@ exports.getMainCategory = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: mainCategory });
 });
 
-// @desc    Update main category
-// @route   PUT /api/v1/main-categories/:id
-// @access  Private
+// ✅ UPDATE
 exports.updateMainCategory = asyncHandler(async (req, res, next) => {
   if (req.body._id) delete req.body._id;
 
-  // ✅ Normalize incoming fields
   req.body = normalizeBody(req.body);
 
-  // ✅ If name is changing, check duplicates
-  if (req.body.name?.en || req.body.name?.vn) {
+  // ✅ Check duplicates
+  if (req.body.name?.en || req.body.name?.vi) {
     const duplicate = await MainCategory.findOne({
       _id: { $ne: req.params.id },
       $or: [
         { "name.en": req.body.name?.en?.trim() },
-        { "name.vn": req.body.name?.vn?.trim() },
+        { "name.vi": req.body.name?.vi?.trim() },
       ],
     });
     if (duplicate) {
@@ -142,7 +130,7 @@ exports.updateMainCategory = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // ✅ If slug is changing, check duplicates
+  // ✅ Check slug uniqueness
   if (req.body.slug) {
     const duplicateSlug = await MainCategory.findOne({
       _id: { $ne: req.params.id },
@@ -153,7 +141,7 @@ exports.updateMainCategory = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // ✅ Handle bgImage file upload
+  // ✅ Handle bgImage upload
   if (req.files?.bgImageFile) {
     const file = req.files.bgImageFile;
     const uploadDir = ensureUploadDir();
@@ -163,7 +151,7 @@ exports.updateMainCategory = asyncHandler(async (req, res, next) => {
     await file.mv(filePath);
 
     req.body.bgImage = {
-      url: `/uploads/${fileName}`,
+      url: `/uploads/maincategory/${fileName}`,
       alt: req.body.bgImage?.alt || "",
     };
   }
@@ -181,15 +169,11 @@ exports.updateMainCategory = asyncHandler(async (req, res, next) => {
   res.status(200).json({ success: true, data: mainCategory });
 });
 
-// @desc    Delete main category
-// @route   DELETE /api/v1/main-categories/:id
-// @access  Private
+// ✅ DELETE
 exports.deleteMainCategory = asyncHandler(async (req, res, next) => {
   const mainCategory = await MainCategory.findByIdAndDelete(req.params.id);
-
   if (!mainCategory) {
     return next(new ErrorResponse("Main category not found", 404));
   }
-
   res.status(200).json({ success: true, data: {} });
 });

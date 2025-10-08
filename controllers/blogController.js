@@ -1,4 +1,5 @@
 const Blog = require("../models/Blog");
+const Category = require("../models/Category");
 
 /**
  * @desc    Get all blogs (with optional filters)
@@ -17,7 +18,7 @@ exports.getBlogs = async (req, res) => {
     const blogs = await Blog.find(query)
       .populate("author", "name email")
       .populate("category", "name")
-      .populate("mainCategory")
+      .populate("mainCategory", "name")
       .sort({ publishedAt: -1 });
 
     res.json({ success: true, data: blogs });
@@ -35,7 +36,8 @@ exports.getBlogBySlug = async (req, res) => {
   try {
     const blog = await Blog.findOne({ slug: req.params.slug })
       .populate("author", "name email")
-      .populate("category", "name");
+      .populate("category", "name")
+      .populate("mainCategory", "name");
 
     if (!blog) {
       return res.status(404).json({ success: false, error: "Blog not found" });
@@ -55,19 +57,45 @@ exports.getBlogBySlug = async (req, res) => {
 exports.createBlog = async (req, res) => {
   try {
     const data = req.body;
-
-    // ✅ Always ensure timestamps
     const now = new Date();
 
     data.createdAt = data.createdAt || now;
-    data.publishedAt = now; // force unique recency
     data.updatedAt = now;
 
-    // Even if it's a draft, keep publishedAt for sorting
+    // ✅ If status = "published" but no publishedAt, assign it
+    if (data.status === "published" && !data.publishedAt) {
+      data.publishedAt = now;
+    }
+
+    // ✅ Ensure "Common" category exists and assign it if missing
+    if (!data.category) {
+      let defaultCat = await Category.findOne({
+        $or: [{ "name.en": "Common" }, { "name.vi": "Chung" }],
+      });
+
+      // ✅ Auto-create Common category if it doesn't exist
+      if (!defaultCat) {
+        console.log("⚠️ Common category not found — creating one automatically...");
+        defaultCat = await Category.create({
+          name: { en: "Common", vi: "Chung" },
+          slug: "common",
+          mainCategory: data.mainCategory || undefined,
+        });
+      }
+
+      data.category = defaultCat._id;
+    }
+
+    // ✅ Create and save the blog
     const blog = new Blog(data);
     await blog.save();
 
-    res.status(201).json({ success: true, data: blog });
+    const populatedBlog = await Blog.findById(blog._id)
+      .populate("author", "name email")
+      .populate("category", "name")
+      .populate("mainCategory", "name");
+
+    res.status(201).json({ success: true, data: populatedBlog });
   } catch (error) {
     console.error("Error creating blog:", error);
     res.status(400).json({ success: false, error: error.message });
@@ -80,10 +108,39 @@ exports.createBlog = async (req, res) => {
  */
 exports.updateBlog = async (req, res) => {
   try {
-    const blog = await Blog.findByIdAndUpdate(req.params.id, req.body, {
+    const updates = req.body;
+    updates.updatedAt = new Date();
+
+    // ✅ Auto-set publishedAt if switched to published and missing
+    if (updates.status === "published" && !updates.publishedAt) {
+      updates.publishedAt = new Date();
+    }
+
+    // ✅ Ensure category is never empty (auto-create Common if needed)
+    if (!updates.category) {
+      let defaultCat = await Category.findOne({
+        $or: [{ "name.en": "Common" }, { "name.vi": "Chung" }],
+      });
+
+      if (!defaultCat) {
+        console.log("⚠️ Common category not found during update — creating one...");
+        defaultCat = await Category.create({
+          name: { en: "Common", vi: "Chung" },
+          slug: "common",
+          mainCategory: updates.mainCategory || undefined,
+        });
+      }
+
+      updates.category = defaultCat._id;
+    }
+
+    const blog = await Blog.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
-    });
+    })
+      .populate("category", "name")
+      .populate("mainCategory", "name")
+      .populate("author", "name email");
 
     if (!blog) {
       return res.status(404).json({ success: false, error: "Blog not found" });
@@ -102,13 +159,16 @@ exports.updateBlog = async (req, res) => {
  */
 exports.deleteBlog = async (req, res) => {
   try {
-    const blog = await Blog.findByIdAndDelete(req.params.id);
+    if (!req.params.id || req.params.id === "undefined") {
+      return res.status(400).json({ success: false, error: "Invalid blog ID" });
+    }
 
+    const blog = await Blog.findByIdAndDelete(req.params.id);
     if (!blog) {
       return res.status(404).json({ success: false, error: "Blog not found" });
     }
 
-    res.json({ success: true, message: "Blog deleted" });
+    res.json({ success: true, message: "Blog deleted successfully" });
   } catch (error) {
     console.error("Error deleting blog:", error);
     res.status(500).json({ success: false, error: "Server Error" });
