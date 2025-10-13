@@ -2,10 +2,20 @@ const mongoose = require("mongoose");
 
 const roleSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, unique: true },
-    status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
+    // ✅ Multilingual name field
+    name: {
+      en: { type: String, required: true },
+      vi: { type: String, required: true },
+    },
 
-    // ✅ Full permission map aligned with Sidebar.jsx & RoleManagement.jsx
+    // ✅ Status
+    status: {
+      type: String,
+      enum: ["Active", "Inactive"],
+      default: "Active",
+    },
+
+    // ✅ Full permission map (aligned with Sidebar.jsx & RoleManagement.jsx)
     permissions: {
       // Dashboard
       dashboard: { type: Boolean, default: false },

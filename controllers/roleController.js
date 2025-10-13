@@ -7,27 +7,31 @@ const ErrorResponse = require("../utils/errorResponse");
 exports.createRole = asyncHandler(async (req, res, next) => {
   const { name, status, permissions } = req.body;
 
-  // Prevent creating another Super Admin
-  if (name === "Super Admin") {
-    return next(
-      new ErrorResponse("You cannot create another Super Admin role ❌", 403)
-    );
+  // ✅ Validate bilingual name
+  if (!name?.en || !name?.vi) {
+    return next(new ErrorResponse("Both English and Vietnamese names are required ❌", 400));
   }
 
-  const existingRole = await Role.findOne({ name });
+  // ✅ Prevent creating another Super Admin
+  if (name.en === "Super Admin" || name.vi === "Quản trị viên cao cấp") {
+    return next(new ErrorResponse("You cannot create another Super Admin role ❌", 403));
+  }
+
+  // ✅ Check for duplicate (in either language)
+  const existingRole = await Role.findOne({
+    $or: [{ "name.en": name.en }, { "name.vi": name.vi }],
+  });
   if (existingRole) {
-    return next(
-      new ErrorResponse("A role with this name already exists ❌", 400)
-    );
+    return next(new ErrorResponse("A role with this name already exists ❌", 400));
   }
 
-  const role = new Role({
+  // ✅ Create role
+  const role = await Role.create({
     name,
     status,
     permissions,
   });
 
-  await role.save();
   res.status(201).json({ success: true, data: role });
 });
 
@@ -50,20 +54,21 @@ exports.updateRole = asyncHandler(async (req, res, next) => {
   const requestingUser = await User.findById(req.user.id).populate("role");
 
   // ✅ Only Super Admin can edit roles
-  if (requestingUser.role?.name !== "Super Admin") {
+  if (requestingUser.role?.name?.en !== "Super Admin") {
     return next(new ErrorResponse("Only Super Admin can edit roles ❌", 403));
   }
 
   const role = await Role.findById(req.params.id);
-  if (!role) {
-    return next(new ErrorResponse("Role not found ❌", 404));
+  if (!role) return next(new ErrorResponse("Role not found ❌", 404));
+
+  // ✅ Prevent editing the Super Admin role
+  if (role.name?.en === "Super Admin" || role.name?.vi === "Quản trị viên cao cấp") {
+    return next(new ErrorResponse("You cannot modify the Super Admin role ❌", 403));
   }
 
-  // Prevent editing the Super Admin role
-  if (role.name === "Super Admin") {
-    return next(
-      new ErrorResponse("You cannot modify the Super Admin role ❌", 403)
-    );
+  // ✅ Validate bilingual name on update
+  if (req.body.name && (!req.body.name.en || !req.body.name.vi)) {
+    return next(new ErrorResponse("Both English and Vietnamese names are required ❌", 400));
   }
 
   const updatedRole = await Role.findByIdAndUpdate(req.params.id, req.body, {
@@ -78,26 +83,29 @@ exports.updateRole = asyncHandler(async (req, res, next) => {
 exports.deleteRole = asyncHandler(async (req, res, next) => {
   const requestingUser = await User.findById(req.user.id).populate("role");
 
+  // 🧠 Handle bilingual role names
+  let roleName = requestingUser.role?.name;
+  if (typeof roleName === "object") {
+    roleName = roleName.en || roleName.vi;
+  }
+
   // ✅ Only Super Admin can delete roles
-  if (requestingUser.role?.name !== "Super Admin") {
+  if (roleName !== "Super Admin") {
     return next(new ErrorResponse("Only Super Admin can delete roles ❌", 403));
   }
 
   const role = await Role.findById(req.params.id);
-  if (!role) {
-    return next(
-      new ErrorResponse(`Role not found with id of ${req.params.id}`, 404)
-    );
+  if (!role) return next(new ErrorResponse("Role not found ❌", 404));
+
+  // ✅ Prevent deleting the Super Admin role
+  if (
+    role.name?.en === "Super Admin" ||
+    role.name?.vi === "Quản trị viên cao cấp"
+  ) {
+    return next(new ErrorResponse("Cannot delete the Super Admin role ❌", 403));
   }
 
-  // Prevent deleting Super Admin role itself
-  if (role.name === "Super Admin") {
-    return next(
-      new ErrorResponse("Cannot delete the Super Admin role ❌", 403)
-    );
-  }
-
-  // ✅ Prevent deleting a role if it's assigned to any user
+  // ✅ Prevent deleting a role assigned to users
   const usersWithRole = await User.find({ role: role._id });
   if (usersWithRole.length > 0) {
     return next(
@@ -109,10 +117,8 @@ exports.deleteRole = asyncHandler(async (req, res, next) => {
   }
 
   await role.deleteOne();
-
   res.status(200).json({
     success: true,
-    data: {},
     message: "Role deleted successfully ✅",
   });
 });

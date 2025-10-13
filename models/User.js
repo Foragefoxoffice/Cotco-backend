@@ -9,11 +9,18 @@ const userSchema = new mongoose.Schema({
     required: [true, "Please provide an Employee ID"],
     trim: true,
   },
-  name: {
-    type: String,
-    required: [true, "Please add a name"],
-    trim: true,
-    maxlength: [100, "Name cannot be more than 100 characters"],
+
+  firstName: {
+    en: { type: String, required: [true, "Please add English first name"], trim: true },
+    vi: { type: String, default: "", trim: true },
+  },
+  middleName: {
+    en: { type: String, default: "", trim: true },
+    vi: { type: String, default: "", trim: true },
+  },
+  lastName: {
+    en: { type: String, required: [true, "Please add English last name"], trim: true },
+    vi: { type: String, default: "", trim: true },
   },
   email: {
     type: String,
@@ -26,6 +33,7 @@ const userSchema = new mongoose.Schema({
       "Please add a valid email",
     ],
   },
+
   password: {
     type: String,
     required: [true, "Please add a password"],
@@ -33,7 +41,6 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
 
-  // ✅ Role reference (Super Admin, Admin, etc.)
   role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
@@ -42,7 +49,7 @@ const userSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["Active", "Inactive"], // ✅ Consistent with frontend
+    enum: ["Active", "Inactive"],
     default: "Active",
   },
 
@@ -50,7 +57,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Please add a phone number"],
     trim: true,
-    maxlength: [20, "Phone number cannot be more than 20 characters"],
   },
 
   profileImage: {
@@ -58,48 +64,30 @@ const userSchema = new mongoose.Schema({
     default: "",
   },
 
-  // ✅ New HR-related fields
+  // ✅ Multilingual Department and Designation
   department: {
-    type: String,
-    trim: true,
-    default: "",
+    en: { type: String, default: "" },
+    vi: { type: String, default: "" },
   },
   designation: {
-    type: String,
-    trim: true,
-    default: "",
+    en: { type: String, default: "" },
+    vi: { type: String, default: "" },
   },
+
   gender: {
     type: String,
     enum: ["Male", "Female", "Others"],
     default: "Others",
   },
-  dateOfBirth: {
-    type: Date,
-  },
-  dateOfJoining: {
-    type: Date,
-  },
+  dateOfBirth: Date,
+  dateOfJoining: Date,
 
-  // ✅ System control fields
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
-  emailVerificationToken: String,
-  emailVerificationExpire: Date,
+  isVerified: { type: Boolean, default: false },
 
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
+
 
 /* =========================================================
    🔐 Encrypt password before saving

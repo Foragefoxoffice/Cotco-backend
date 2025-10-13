@@ -10,7 +10,6 @@ const safeParse = (val, fallback) => {
   }
 };
 
-// Save uploaded file
 const saveFile = (file, folder = "privacy") => {
   const uploadDir = path.join(__dirname, `../uploads/${folder}`);
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -36,37 +35,51 @@ exports.updatePrivacyPage = async (req, res) => {
     let existing = await PrivacyPage.findOne();
     if (!existing) existing = new PrivacyPage({});
 
-    // ✅ Handle Banner
-    let privacyBanner = safeParse(
-      data.privacyBanner,
-      existing.privacyBanner || {}
-    );
+    /* ============================
+       🧩 1️⃣ Privacy Banner
+    ============================ */
+    let privacyBanner = safeParse(data.privacyBanner, existing.privacyBanner || {});
     if (req.files?.privacyBannerMediaFile) {
-      privacyBanner.privacyBannerMedia = saveFile(
-        req.files.privacyBannerMediaFile,
-        "privacy"
-      );
+      privacyBanner.privacyBannerMedia = saveFile(req.files.privacyBannerMediaFile, "privacy");
     } else {
       privacyBanner.privacyBannerMedia =
-        privacyBanner.privacyBannerMedia ||
-        existing?.privacyBanner?.privacyBannerMedia ||
-        "";
+        privacyBanner.privacyBannerMedia || existing?.privacyBanner?.privacyBannerMedia || "";
     }
-
     existing.privacyBanner = privacyBanner;
 
-    // ✅ Handle Policies (Array)
-    existing.privacyPolicies = safeParse(
-      data.privacyPolicies,
-      existing.privacyPolicies || []
-    );
+    /* ============================
+       🧩 2️⃣ Privacy Policies
+    ============================ */
+    existing.privacyPolicies = safeParse(data.privacyPolicies, existing.privacyPolicies || []);
 
+    /* ============================
+       🧩 3️⃣ SEO Meta Section (NEW)
+    ============================ */
+    const seoMeta = safeParse(data.privacySeoMeta, existing.seoMeta || {});
+    console.log("🟢 Received SEO Meta:", seoMeta);
+
+    // ✅ Handle OG image (optional upload)
+    if (req.files?.privacySeoOgImageFile) {
+      seoMeta.ogImage = saveFile(req.files.privacySeoOgImageFile, "privacy/seo");
+    } else if (seoMeta.ogImage === "") {
+      seoMeta.ogImage = "";
+    } else {
+      seoMeta.ogImage = existing.seoMeta?.ogImage || "";
+    }
+
+    existing.seoMeta = seoMeta;
+
+    /* ============================
+       💾 Save All
+    ============================ */
     await existing.save();
+
     res.json({
       message: "Privacy Page updated successfully",
       privacy: existing,
     });
   } catch (err) {
+    console.error("❌ updatePrivacyPage error:", err);
     res.status(500).json({ error: err.message });
   }
 };

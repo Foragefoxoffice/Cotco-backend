@@ -15,22 +15,36 @@ const fs = require("fs");
 // @route   POST /api/v1/auth/register
 // @access  Private (Admin/with permission)
 exports.register = asyncHandler(async (req, res, next) => {
-  const { employeeId, name, email, phone, roleId } = req.body;
+  const {
+    employeeId,
+    firstName,
+    middleName,
+    lastName,
+    department,
+    designation,
+    email,
+    phone,
+    roleId,
+    gender,
+    dateOfBirth,
+    dateOfJoining,
+  } = req.body;
 
-  // Check if user already exists
+  // 🔍 Check for existing user
   if (await User.findOne({ email })) {
     return next(new ErrorResponse("User already exists", 400));
   }
 
-  // Validate role
+  // 🔍 Validate role
   const role = await Role.findById(roleId);
   if (!role) return next(new ErrorResponse("Invalid role ID", 400));
 
-  // Generate random password
-  const firstName = name.split(" ")[0].toLowerCase();
-  const rawPassword = `${firstName}@${Math.floor(1000 + Math.random() * 9000)}`;
+  // ✅ Generate random password
+  const rawPassword = `${firstName?.en?.toLowerCase() || "user"}@${
+    Math.floor(1000 + Math.random() * 9000)
+  }`;
 
-  // Handle profile upload
+  // ✅ Optional profile upload
   let profileImage = null;
   if (req.files && req.files.profileImage) {
     const file = req.files.profileImage;
@@ -42,25 +56,41 @@ exports.register = asyncHandler(async (req, res, next) => {
     profileImage = `/uploads/profile/${fileName}`;
   }
 
-  // Create user
+  // ✅ Create user (now includes gender, DOB, DOJ)
   const user = await User.create({
     employeeId,
-    name,
+    firstName,
+    middleName,
+    lastName,
     email,
     phone,
     role: role._id,
     password: rawPassword,
+    department,
+    designation,
+    gender,
+    dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+    dateOfJoining: dateOfJoining ? new Date(dateOfJoining) : null,
     isVerified: true,
     profileImage,
   });
 
-  // Send credentials email
+  // ✅ Bilingual full name for email
+  const fullName = `${firstName?.en || ""} ${middleName?.en || ""} ${
+    lastName?.en || ""
+  }`.trim();
+
+  // ✅ Prepare email message
   const message = `
-    <h2>Welcome ${name}</h2>
+    <h2>Welcome ${fullName}</h2>
     <p>Your account has been created successfully.</p>
     <p><strong>Email:</strong> ${email}</p>
     <p><strong>Password:</strong> ${rawPassword}</p>
     <p><strong>Role:</strong> ${role.name}</p>
+    <p><strong>Gender:</strong> ${gender || "—"}</p>
+    <p><strong>Date of Joining:</strong> ${
+      dateOfJoining ? new Date(dateOfJoining).toLocaleDateString("en-GB") : "—"
+    }</p>
   `;
 
   try {
@@ -69,24 +99,35 @@ exports.register = asyncHandler(async (req, res, next) => {
       subject: "Your Account Credentials",
       message,
     });
+
     res.status(200).json({
       success: true,
       data: {
         id: user._id,
         employeeId,
-        name,
+        name: {
+          en: fullName,
+          vi: `${firstName?.vi || ""} ${middleName?.vi || ""} ${
+            lastName?.vi || ""
+          }`.trim(),
+        },
         email,
+        gender,
+        dateOfBirth,
+        dateOfJoining,
         role: { id: role._id, name: role.name },
         profileImage,
       },
     });
   } catch (err) {
     await User.findByIdAndDelete(user._id);
+    console.error("❌ Email send failed:", err);
     return next(
       new ErrorResponse("User created but email could not be sent", 500)
     );
   }
 });
+
 
 /* =========================================================
    LOGIN (Email or Employee ID)

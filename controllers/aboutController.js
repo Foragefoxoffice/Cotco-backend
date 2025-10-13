@@ -1,10 +1,9 @@
-// controllers/aboutController.js
 const path = require("path");
 const fs = require("fs");
 const AboutPage = require("../models/AboutPage");
 
 // ✅ Safe JSON parse helper
-const safeParse = (val, fallback) => {
+const safeParse = (val, fallback = {}) => {
   try {
     return typeof val === "string" ? JSON.parse(val) : val || fallback;
   } catch {
@@ -25,8 +24,36 @@ const saveFile = (file, folder = "about") => {
 exports.getAboutPage = async (req, res) => {
   try {
     const about = await AboutPage.findOne();
-    res.json(about || {});
+
+    if (!about) {
+      return res.json({
+        seoMeta: {
+          metaTitle: { en: "", vi: "" },
+          metaDescription: { en: "", vi: "" },
+          metaKeywords: { en: "", vi: "" },
+        },
+        aboutTeam: { dynamicTeams: {} },
+      });
+    }
+
+    const aboutData = about.toObject();
+
+    // ✅ Convert Map to object for frontend
+    if (aboutData.aboutTeam?.dynamicTeams instanceof Map) {
+      aboutData.aboutTeam.dynamicTeams = Object.fromEntries(
+        aboutData.aboutTeam.dynamicTeams
+      );
+    }
+
+    aboutData.seoMeta = aboutData.seoMeta || {
+      metaTitle: { en: "", vi: "" },
+      metaDescription: { en: "", vi: "" },
+      metaKeywords: { en: "", vi: "" },
+    };
+
+    res.json(aboutData);
   } catch (err) {
+    console.error("❌ getAboutPage error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -34,110 +61,89 @@ exports.getAboutPage = async (req, res) => {
 // ---------------------- UPDATE ---------------------- //
 exports.updateAboutPage = async (req, res) => {
   try {
-    let data = req.body;
+    const data = req.body;
+    const section = data.section || "";
+    const existing = (await AboutPage.findOne()) || new AboutPage({});
 
-    // ✅ Find or create doc
-    let existing = await AboutPage.findOne();
-    if (!existing) existing = new AboutPage({});
+    /* ==========================================================
+       ✅ CASE 1: SEO META SECTION
+    ========================================================== */
+    if (section === "aboutSeoMeta" || data.aboutSeoMeta) {
+      const seoMeta = safeParse(data.aboutSeoMeta, existing.seoMeta || {});
+      existing.seoMeta = {
+        ...existing.seoMeta?.toObject?.(),
+        ...seoMeta,
+      };
 
-    // ✅ Safe parsing with fallback to existing
-    let aboutHero = safeParse(data.aboutHero, existing.aboutHero || {});
-    let aboutOverview = safeParse(
-      data.aboutOverview,
-      existing.aboutOverview || {}
-    );
-    let aboutFounder = safeParse(
-      data.aboutFounder,
-      existing.aboutFounder || {}
-    );
-    let aboutMissionVission = safeParse(
-      data.aboutMissionVission,
-      existing.aboutMissionVission || {}
-    );
-    let aboutCore = safeParse(data.aboutCore, existing.aboutCore || {});
-    let aboutHistory = safeParse(
-      data.aboutHistory,
-      existing.aboutHistory || []
-    );
-    let aboutTeam = safeParse(data.aboutTeam, existing.aboutTeam || {});
-    let aboutAlliances = safeParse(
-      data.aboutAlliances,
-      existing.aboutAlliances || {}
-    );
+      await existing.save();
+      return res.json({
+        message: "SEO Meta updated successfully",
+        about: existing,
+      });
+    }
+
+    /* ==========================================================
+       ✅ CASE 2: FULL PAGE UPDATE
+    ========================================================== */
+    const aboutHero = safeParse(data.aboutHero, existing.aboutHero || {});
+    const aboutOverview = safeParse(data.aboutOverview, existing.aboutOverview || {});
+    const aboutFounder = safeParse(data.aboutFounder, existing.aboutFounder || {});
+    const aboutMissionVission = safeParse(data.aboutMissionVission, existing.aboutMissionVission || {});
+    const aboutCore = safeParse(data.aboutCore, existing.aboutCore || {});
+    let aboutHistory = safeParse(data.aboutHistory, existing.aboutHistory || []);
+    const aboutAlliances = safeParse(data.aboutAlliances, existing.aboutAlliances || {});
+    let aboutTeam = safeParse(data.aboutTeam, existing.aboutTeam || { dynamicTeams: {} });
 
     // ---------------- HERO ----------------
     if (req.files?.aboutBannerFile) {
       aboutHero.aboutBanner = saveFile(req.files.aboutBannerFile, "about");
     } else {
       aboutHero.aboutBanner =
-        aboutHero.aboutBanner || existing?.aboutHero?.aboutBanner || "";
+        aboutHero.aboutBanner || existing.aboutHero?.aboutBanner || "";
     }
 
     // ---------------- OVERVIEW ----------------
     if (req.files?.aboutOverviewFile) {
-      aboutOverview.aboutOverviewImg = saveFile(
-        req.files.aboutOverviewFile,
-        "about"
-      );
+      aboutOverview.aboutOverviewImg = saveFile(req.files.aboutOverviewFile, "about");
     } else {
       aboutOverview.aboutOverviewImg =
-        aboutOverview.aboutOverviewImg ||
-        existing?.aboutOverview?.aboutOverviewImg ||
-        "";
+        aboutOverview.aboutOverviewImg || existing.aboutOverview?.aboutOverviewImg || "";
     }
 
     // ---------------- FOUNDER ----------------
-    if (req.files?.founderImg1File) {
-      aboutFounder.founderImg1 = saveFile(req.files.founderImg1File, "about");
-    } else {
-      aboutFounder.founderImg1 =
-        aboutFounder.founderImg1 || existing?.aboutFounder?.founderImg1 || "";
-    }
-
-    if (req.files?.founderImg2File) {
-      aboutFounder.founderImg2 = saveFile(req.files.founderImg2File, "about");
-    } else {
-      aboutFounder.founderImg2 =
-        aboutFounder.founderImg2 || existing?.aboutFounder?.founderImg2 || "";
-    }
-
-    if (req.files?.founderImg3File) {
-      aboutFounder.founderImg3 = saveFile(req.files.founderImg3File, "about");
-    } else {
-      aboutFounder.founderImg3 =
-        aboutFounder.founderImg3 || existing?.aboutFounder?.founderImg3 || "";
-    }
+    ["founderImg1File", "founderImg2File", "founderImg3File"].forEach((key, i) => {
+      const imgKey = `founderImg${i + 1}`;
+      if (req.files?.[key]) {
+        aboutFounder[imgKey] = saveFile(req.files[key], "about");
+      } else {
+        aboutFounder[imgKey] =
+          aboutFounder[imgKey] || existing.aboutFounder?.[imgKey] || "";
+      }
+    });
 
     // ---------------- CORE ----------------
     [1, 2, 3].forEach((i) => {
-      if (req.files?.[`aboutCoreBg${i}File`]) {
-        aboutCore[`aboutCoreBg${i}`] = saveFile(
-          req.files[`aboutCoreBg${i}File`],
-          "about"
-        );
+      const fileKey = `aboutCoreBg${i}File`;
+      const fieldKey = `aboutCoreBg${i}`;
+      if (req.files?.[fileKey]) {
+        aboutCore[fieldKey] = saveFile(req.files[fileKey], "about");
       } else {
-        aboutCore[`aboutCoreBg${i}`] =
-          aboutCore[`aboutCoreBg${i}`] ||
-          existing?.aboutCore?.[`aboutCoreBg${i}`] ||
-          "";
+        aboutCore[fieldKey] =
+          aboutCore[fieldKey] || existing.aboutCore?.[fieldKey] || "";
       }
     });
 
     // ---------------- HISTORY ----------------
-    if (!Array.isArray(aboutHistory)) {
-      aboutHistory = [];
-    }
-
+    if (!Array.isArray(aboutHistory)) aboutHistory = [];
     aboutHistory = aboutHistory.map((item, i) => {
       let image = "";
-
-      // ✅ match frontend naming: historyImage0, historyImage1 ...
-      if (req.files?.[`historyImage${i}`]) {
-        image = saveFile(req.files[`historyImage${i}`], "history");
+      const fileKey = `historyImage${i}`;
+      if (req.files?.[fileKey]) {
+        image = saveFile(req.files[fileKey], "history");
       } else if (item.image && item.image.startsWith("/uploads/")) {
-        image = item.image; // keep path if valid
-      } else if (existing?.aboutHistory?.[i]?.image) {
-        image = existing.aboutHistory[i].image; // fallback
+        image = item.image;
+      } else if (existing.aboutHistory?.[i]?.image) {
+        image = existing.aboutHistory[i].image;
       }
 
       return {
@@ -147,11 +153,21 @@ exports.updateAboutPage = async (req, res) => {
       };
     });
 
-    existing.aboutHistory = aboutHistory;
+    // ---------------- TEAM (Dynamic) ----------------
+    if (!aboutTeam.dynamicTeams) {
+      // ✅ Convert old flat object to new dynamic structure
+      aboutTeam = { dynamicTeams: aboutTeam };
+    }
 
+    const existingTeams = existing.aboutTeam?.dynamicTeams?.toObject?.() || {};
+    const newTeams = aboutTeam.dynamicTeams || {};
 
-    // ---------------- TEAM ----------------
-    // overwrite with safeParse result
+    existing.aboutTeam = {
+      dynamicTeams: {
+        ...existingTeams,
+        ...newTeams,
+      },
+    };
 
     // ---------------- ALLIANCES ----------------
     if (req.files?.aboutAlliancesFiles) {
@@ -159,16 +175,15 @@ exports.updateAboutPage = async (req, res) => {
         ? req.files.aboutAlliancesFiles
         : [req.files.aboutAlliancesFiles];
       const uploadedPaths = files.map((f) => saveFile(f, "alliances"));
-
       aboutAlliances.aboutAlliancesImg = [
-        ...(existing?.aboutAlliances?.aboutAlliancesImg || []),
+        ...(existing.aboutAlliances?.aboutAlliancesImg || []),
         ...uploadedPaths,
       ];
     } else {
-      aboutAlliances.aboutAlliancesImg = aboutAlliances.aboutAlliancesImg
-        ?.length
-        ? aboutAlliances.aboutAlliancesImg
-        : existing?.aboutAlliances?.aboutAlliancesImg || [];
+      aboutAlliances.aboutAlliancesImg =
+        aboutAlliances.aboutAlliancesImg?.length
+          ? aboutAlliances.aboutAlliancesImg
+          : existing.aboutAlliances?.aboutAlliancesImg || [];
     }
 
     // ✅ Assign back to doc
@@ -177,14 +192,14 @@ exports.updateAboutPage = async (req, res) => {
     existing.aboutFounder = aboutFounder;
     existing.aboutMissionVission = aboutMissionVission;
     existing.aboutCore = aboutCore;
-    existing.aboutHistory = aboutHistory; // <- full updated array
-    existing.aboutTeam = aboutTeam;
+    existing.aboutHistory = aboutHistory;
     existing.aboutAlliances = aboutAlliances;
 
     await existing.save();
 
     res.json({ message: "About Page updated successfully", about: existing });
   } catch (err) {
+    console.error("❌ updateAboutPage error:", err);
     res.status(500).json({ error: err.message });
   }
 };

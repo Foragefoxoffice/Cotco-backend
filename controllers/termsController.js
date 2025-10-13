@@ -36,19 +36,12 @@ exports.updateTermsPage = async (req, res) => {
     let existing = await TermsConditionsPage.findOne();
     if (!existing) existing = new TermsConditionsPage({});
 
-    // Handle termsBanner
+    /* ✅ 1️⃣ Handle Banner */
     let termsBanner = safeParse(data.termsBanner, existing.termsBanner || {});
-
-    // ❌ remove React-only property
-    if ("termsBannerMediaFile" in termsBanner) {
-      delete termsBanner.termsBannerMediaFile;
-    }
+    if ("termsBannerMediaFile" in termsBanner) delete termsBanner.termsBannerMediaFile;
 
     if (req.files?.termsBannerMediaFile) {
-      termsBanner.termsBannerMedia = saveFile(
-        req.files.termsBannerMediaFile,
-        "terms"
-      );
+      termsBanner.termsBannerMedia = saveFile(req.files.termsBannerMediaFile, "terms");
     } else {
       termsBanner.termsBannerMedia =
         termsBanner.termsBannerMedia ||
@@ -61,11 +54,29 @@ exports.updateTermsPage = async (req, res) => {
       termsBannerTitle: termsBanner.termsBannerTitle || { en: "", vi: "" },
     };
 
-    // Handle long content
+    /* ✅ 2️⃣ Handle Content */
     existing.termsConditionsContent = safeParse(
       data.termsConditionsContent,
       existing.termsConditionsContent || { en: "", vi: "" }
     );
+
+    /* ✅ 3️⃣ Handle SEO Meta */
+    if (data.termsSeoMeta) {
+      const parsedSeo = safeParse(data.termsSeoMeta, existing.seoMeta || {});
+      existing.seoMeta = {
+        metaTitle: parsedSeo.metaTitle || { en: "", vi: "" },
+        metaDescription: parsedSeo.metaDescription || { en: "", vi: "" },
+        metaKeywords: parsedSeo.metaKeywords || { en: "", vi: "" },
+        ogTitle: parsedSeo.ogTitle || { en: "", vi: "" },
+        ogDescription: parsedSeo.ogDescription || { en: "", vi: "" },
+        ogImage: parsedSeo.ogImage || existing.seoMeta?.ogImage || "",
+      };
+
+      // ✅ Handle OG image file upload if provided
+      if (req.files?.termsSeoOgImageFile) {
+        existing.seoMeta.ogImage = saveFile(req.files.termsSeoOgImageFile, "terms");
+      }
+    }
 
     await existing.save();
     res.json({
@@ -73,6 +84,7 @@ exports.updateTermsPage = async (req, res) => {
       terms: existing,
     });
   } catch (err) {
+    console.error("❌ Error in updateTermsPage:", err);
     res.status(500).json({ error: err.message });
   }
 };

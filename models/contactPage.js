@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
-// Reusable multilingual field
+// ✅ Reusable multilingual field
 const multiLangField = {
   en: { type: String, default: "" },
   vi: { type: String, default: "" },
 };
 
-/* 1. Banner */
+/* 1️⃣ Banner Section */
 const contactBannerSchema = new mongoose.Schema(
   {
     contactBannerBg: { type: String, default: "" },
@@ -15,16 +15,16 @@ const contactBannerSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 2. Form */
+/* 2️⃣ Form Section */
 const contactFormSchema = new mongoose.Schema(
   {
     contactFormImg: { type: String, default: "" },
-    contactForm: multiLangField, // description or form intro text
+    contactForm: multiLangField, // intro text or description
   },
   { _id: false }
 );
 
-/* 3. Location */
+/* 3️⃣ Location Section */
 const contactLocationSchema = new mongoose.Schema(
   {
     contactLocationTitle: multiLangField,
@@ -35,16 +35,16 @@ const contactLocationSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 4. Hours */
+/* 4️⃣ Hours Section */
 const contactHoursSchema = new mongoose.Schema(
   {
     contactHoursTitle: multiLangField,
-    contactHoursList: [multiLangField], // infinity list
+    contactHoursList: [multiLangField], // dynamic list of hours
   },
   { _id: false }
 );
 
-/* 5. Map */
+/* 5️⃣ Map Section */
 const contactMapSchema = new mongoose.Schema(
   {
     contactMapTitle: multiLangField,
@@ -53,7 +53,20 @@ const contactMapSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* Main Page */
+/* 6️⃣ 🆕 SEO Meta Section */
+const seoMetaSchema = new mongoose.Schema(
+  {
+    metaTitle: multiLangField,
+    metaDescription: multiLangField,
+    metaKeywords: multiLangField,
+    ogTitle: multiLangField,
+    ogDescription: multiLangField,
+    ogImage: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+/* 🧩 MAIN CONTACT PAGE SCHEMA */
 const contactPageSchema = new mongoose.Schema(
   {
     contactBanner: contactBannerSchema,
@@ -61,10 +74,12 @@ const contactPageSchema = new mongoose.Schema(
     contactLocation: contactLocationSchema,
     contactHours: contactHoursSchema,
     contactMap: contactMapSchema,
+    seoMeta: seoMetaSchema, // ✅ Added SEO support
   },
   { timestamps: true }
 );
 
+// 🔄 Prevent OverwriteModelError
 module.exports =
   mongoose.models.ContactPage ||
   mongoose.model("ContactPage", contactPageSchema);

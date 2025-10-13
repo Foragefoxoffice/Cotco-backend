@@ -1,31 +1,31 @@
 const mongoose = require("mongoose");
 
-// Reusable multilingual field
+// ✅ Reusable multilingual field
 const multiLangField = {
   en: { type: String, default: "" },
   vi: { type: String, default: "" },
 };
 
-// 1. Hero
+// 1️⃣ HERO SECTION
 const aboutHeroSchema = new mongoose.Schema(
   {
     aboutTitle: multiLangField,
-    aboutBanner: { type: String },
+    aboutBanner: { type: String, default: "" },
   },
   { _id: false }
 );
 
-// 2. Overview
+// 2️⃣ OVERVIEW
 const aboutOverviewSchema = new mongoose.Schema(
   {
-    aboutOverviewImg: { type: String },
+    aboutOverviewImg: { type: String, default: "" },
     aboutOverviewTitle: multiLangField,
     aboutOverviewDes: multiLangField,
   },
   { _id: false }
 );
 
-// 3. Founder
+// 3️⃣ FOUNDER SECTION
 const aboutFounderSchema = new mongoose.Schema(
   {
     aboutFounderTitle: multiLangField,
@@ -38,7 +38,7 @@ const aboutFounderSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 4. Mission & Vision
+// 4️⃣ MISSION & VISION
 const aboutMissionVissionSchema = new mongoose.Schema(
   {
     aboutMissionVissionTitle: multiLangField,
@@ -60,35 +60,35 @@ const aboutMissionVissionSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 5. Core Values
+// 5️⃣ CORE VALUES
 const aboutCoreSchema = new mongoose.Schema(
   {
-    aboutCoreBg1: { type: String },
+    aboutCoreBg1: { type: String, default: "" },
     aboutCoreTitle1: multiLangField,
     aboutCoreDes1: multiLangField,
 
-    aboutCoreBg2: { type: String },
+    aboutCoreBg2: { type: String, default: "" },
     aboutCoreTitle2: multiLangField,
     aboutCoreDes2: multiLangField,
 
-    aboutCoreBg3: { type: String },
+    aboutCoreBg3: { type: String, default: "" },
     aboutCoreTitle3: multiLangField,
     aboutCoreDes3: multiLangField,
   },
   { _id: false }
 );
 
-// 6. History
+// 6️⃣ HISTORY
 const aboutHistorySchema = new mongoose.Schema(
   {
-    year: { type: String },
+    year: { type: String, default: "" },
     content: multiLangField,
-    image: { type: String },
+    image: { type: String, default: "" },
   },
   { _id: false }
 );
 
-// 7. Teams
+// 7️⃣ TEAMS (Dynamic, bilingual)
 const teamMemberSchema = new mongoose.Schema(
   {
     teamName: multiLangField,
@@ -100,24 +100,40 @@ const teamMemberSchema = new mongoose.Schema(
 
 const aboutTeamSchema = new mongoose.Schema(
   {
-    cottonTeam: [teamMemberSchema],
-    machineTeam: [teamMemberSchema],
-    fiberTeam: [teamMemberSchema],
-    marketingTeam: [teamMemberSchema],
-    directorTeam: [teamMemberSchema],
+    dynamicTeams: {
+      type: Map,
+      of: new mongoose.Schema(
+        {
+          teamLabel: multiLangField, // bilingual team name
+          members: [teamMemberSchema],
+        },
+        { _id: false }
+      ),
+      default: {},
+    },
   },
   { _id: false }
 );
 
-// 8. Alliances
+// 8️⃣ ALLIANCES
 const aboutAlliancesSchema = new mongoose.Schema(
   {
-    aboutAlliancesImg: [{ type: String }],
+    aboutAlliancesImg: [{ type: String, default: "" }],
   },
   { _id: false }
 );
 
-// ✅ Main Schema
+// 9️⃣ SEO META
+const seoMetaSchema = new mongoose.Schema(
+  {
+    metaTitle: multiLangField,
+    metaDescription: multiLangField,
+    metaKeywords: multiLangField,
+  },
+  { _id: false }
+);
+
+// 🔹 MAIN ABOUT PAGE SCHEMA
 const aboutPageSchema = new mongoose.Schema(
   {
     aboutHero: aboutHeroSchema,
@@ -128,10 +144,11 @@ const aboutPageSchema = new mongoose.Schema(
     aboutHistory: [aboutHistorySchema],
     aboutTeam: aboutTeamSchema,
     aboutAlliances: aboutAlliancesSchema,
+    seoMeta: seoMetaSchema,
   },
   { timestamps: true }
 );
 
-// 🔄 Prevent OverwriteModelError
+// 🧩 Prevent OverwriteModelError
 module.exports =
   mongoose.models.AboutPage || mongoose.model("AboutPage", aboutPageSchema);

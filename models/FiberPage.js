@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
-// Reusable multilingual field
+// ✅ Reusable multilingual field
 const multiLangField = {
   en: { type: String, default: "" },
   vi: { type: String, default: "" },
 };
 
-/* 1. Banner */
+/* 1️⃣ Banner Section */
 const fiberBannerSchema = new mongoose.Schema(
   {
     fiberBannerMedia: { type: String, default: "" }, // image or video
@@ -19,7 +19,7 @@ const fiberBannerSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 2. Sustainability */
+/* 2️⃣ Sustainability Section */
 const fiberSustainabilitySchema = new mongoose.Schema(
   {
     fiberSustainabilityTitle: multiLangField,
@@ -36,7 +36,7 @@ const fiberSustainabilitySchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 3. Choose Us */
+/* 3️⃣ Choose Us Section */
 const fiberChooseUsBoxSchema = new mongoose.Schema(
   {
     fiberChooseUsBoxBg: { type: String, default: "" },
@@ -56,21 +56,21 @@ const fiberChooseUsSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 4. Supplier */
+/* 4️⃣ Supplier Section */
 const fiberSupplierSchema = new mongoose.Schema(
   {
     fiberSupplierTitle: multiLangField,
     fiberSupplierDes: [multiLangField], // list
-    fiberSupplierImg: [{ type: String }], // infinity add
+    fiberSupplierImg: [{ type: String, default: "" }], // infinite add
   },
   { _id: false }
 );
 
-/* 5. Product */
+/* 5️⃣ Products Section */
 const fiberProductSchema = new mongoose.Schema(
   {
     fiberProductTitle: multiLangField,
-    fiberProductDes: [multiLangField], // list
+    fiberProductDes: [multiLangField],
     fiberProductImg: { type: String, default: "" },
   },
   { _id: false }
@@ -86,18 +86,31 @@ const fiberProductsSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 6. Certification */
+/* 6️⃣ Certification Section */
 const fiberCertificationSchema = new mongoose.Schema(
   {
     fiberCertificationTitle: multiLangField,
     fiberCertificationButtonText: multiLangField,
     fiberCertificationButtonLink: { type: String, default: "" },
-    fiberCertificationImg: [{ type: String }],
+    fiberCertificationImg: [{ type: String, default: "" }],
   },
   { _id: false }
 );
 
-/* Main Page */
+/* 7️⃣ 🆕 SEO META Section */
+const seoMetaSchema = new mongoose.Schema(
+  {
+    metaTitle: multiLangField,
+    metaDescription: multiLangField,
+    metaKeywords: multiLangField,
+    ogTitle: multiLangField,
+    ogDescription: multiLangField,
+    ogImage: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+/* 🧩 MAIN FIBER PAGE SCHEMA */
 const fiberPageSchema = new mongoose.Schema(
   {
     fiberBanner: fiberBannerSchema,
@@ -106,9 +119,11 @@ const fiberPageSchema = new mongoose.Schema(
     fiberSupplier: fiberSupplierSchema,
     fiberProducts: fiberProductsSchema,
     fiberCertification: fiberCertificationSchema,
+    seoMeta: seoMetaSchema, // ✅ added SEO meta section
   },
   { timestamps: true }
 );
 
+// 🔄 Prevent OverwriteModelError
 module.exports =
   mongoose.models.FiberPage || mongoose.model("FiberPage", fiberPageSchema);
