@@ -40,6 +40,8 @@ const footerRoutes = require("./routes/footerRoutes");
 const mainCategoryRoutes = require("./routes/mainCategoryRoutes");
 const contactEntriesRoutes = require("./routes/contactEntriesRoutes");
 const roleRoutes = require("./routes/roleRoutes");
+const machineCMSRoutes = require("./routes/machineCMSRoutes");
+
 
 // ===== Connect to MongoDB =====
 connectDB();
@@ -153,6 +155,7 @@ function safeUse(routePath, router) {
   app.use(routePath, router);
 }
 
+
 // ===== Register Routes Safely =====
 safeUse("/api/v1/auth", authRoutes);
 safeUse("/api/v1/users", userRoutes);
@@ -173,6 +176,8 @@ safeUse("/api/v1/footerpage", footerRoutes);
 safeUse("/api/v1/maincategories", mainCategoryRoutes);
 safeUse("/api/v1/contactentries", contactEntriesRoutes);
 safeUse("/api/v1/roles", roleRoutes);
+safeUse("/api/v1/machinescms", machineCMSRoutes);
+
 
 // ===== Chatbot Endpoint =====
 app.post("/api/v1/chatbot", async (req, res) => {

@@ -35,15 +35,16 @@ exports.updateCottonPage = async (req, res) => {
     let existing = await CottonPage.findOne();
     if (!existing) existing = new CottonPage({});
 
-    let cottonBanner = safeParse(data.cottonBanner, existing.cottonBanner || {});
-    let cottonSupplier = safeParse(data.cottonSupplier, existing.cottonSupplier || []);
-    let cottonTrust = safeParse(data.cottonTrust, existing.cottonTrust || {});
-    let cottonMember = safeParse(data.cottonMember, existing.cottonMember || {});
-
-    // ✅ NEW: parse seoMeta data
+    // ---------- SAFE PARSING ----------
+    const cottonBanner = safeParse(data.cottonBanner, existing.cottonBanner || {});
+    const cottonSupplier = safeParse(data.cottonSupplier, existing.cottonSupplier || []);
+    const cottonTrust = safeParse(data.cottonTrust, existing.cottonTrust || {});
+    const cottonMember = safeParse(data.cottonMember, existing.cottonMember || {});
+    const cottonTeam = safeParse(data.cottonTeam, existing.cottonTeam || {});
     let seoMeta = safeParse(data.cottonSeoMeta, existing.seoMeta || {});
+    
 
-    // ---------------- BANNER ----------------
+    // ---------- BANNER ----------
     if (req.files?.cottonBannerImgFile) {
       cottonBanner.cottonBannerImg = saveFile(req.files.cottonBannerImgFile, "cotton/banner");
     } else if (cottonBanner.cottonBannerImg === "") {
@@ -56,41 +57,50 @@ exports.updateCottonPage = async (req, res) => {
       cottonBanner.cottonBannerOverview ||
       existing.cottonBanner?.cottonBannerOverview || { en: "", vi: "" };
 
-    let bannerSlidesFromBody = Array.isArray(cottonBanner.cottonBannerSlideImg)
-      ? cottonBanner.cottonBannerSlideImg.filter((img) => img !== "")
+    let bannerSlides = Array.isArray(cottonBanner.cottonBannerSlideImg)
+  ? cottonBanner.cottonBannerSlideImg.filter(Boolean)
+  : [];
+
+if (req.files?.cottonBannerSlideImgFiles) {
+  const files = Array.isArray(req.files.cottonBannerSlideImgFiles)
+    ? req.files.cottonBannerSlideImgFiles
+    : [req.files.cottonBannerSlideImgFiles];
+  const uploaded = files.map((f) => saveFile(f, "cotton/banner/slides"));
+  bannerSlides = [...uploaded]; // ✅ overwrite old, not append
+}
+
+cottonBanner.cottonBannerSlideImg = bannerSlides;
+
+
+    // ---------- SUPPLIERS ----------
+    const updatedSuppliers = Array.isArray(cottonSupplier)
+      ? cottonSupplier.map((s, i) => {
+          const updated = { ...s };
+          if (req.files?.[`cottonSupplierLogoFile${i}`]) {
+            updated.cottonSupplierLogo = saveFile(
+              req.files[`cottonSupplierLogoFile${i}`],
+              "cotton/suppliers/logos"
+            );
+          } else {
+            updated.cottonSupplierLogo = existing.cottonSupplier?.[i]?.cottonSupplierLogo || "";
+          }
+
+          if (req.files?.[`cottonSupplierBgFile${i}`]) {
+            updated.cottonSupplierBg = saveFile(
+              req.files[`cottonSupplierBgFile${i}`],
+              "cotton/suppliers/bg"
+            );
+          } else {
+            updated.cottonSupplierBg = existing.cottonSupplier?.[i]?.cottonSupplierBg || "";
+          }
+
+          return updated;
+        })
       : [];
 
-    if (req.files?.cottonBannerSlideImgFiles) {
-      const files = Array.isArray(req.files.cottonBannerSlideImgFiles)
-        ? req.files.cottonBannerSlideImgFiles
-        : [req.files.cottonBannerSlideImgFiles];
-      const uploaded = files.map((f) => saveFile(f, "cotton/banner/slides"));
-      bannerSlidesFromBody = [...bannerSlidesFromBody, ...uploaded];
-    }
-    cottonBanner.cottonBannerSlideImg = bannerSlidesFromBody;
-
-    // ---------------- SUPPLIERS ----------------
-    if (cottonSupplier.length > 0) {
-      cottonSupplier = cottonSupplier.map((s, i) => {
-        if (req.files?.[`cottonSupplierLogoFile${i}`]) {
-          s.cottonSupplierLogo = saveFile(req.files[`cottonSupplierLogoFile${i}`], "cotton/suppliers/logos");
-        } else {
-          s.cottonSupplierLogo = existing?.cottonSupplier?.[i]?.cottonSupplierLogo || "";
-        }
-
-        if (req.files?.[`cottonSupplierBgFile${i}`]) {
-          s.cottonSupplierBg = saveFile(req.files[`cottonSupplierBgFile${i}`], "cotton/suppliers/bg");
-        } else {
-          s.cottonSupplierBg = existing?.cottonSupplier?.[i]?.cottonSupplierBg || "";
-        }
-
-        return s;
-      });
-    }
-
-    // ---------------- TRUST ----------------
-    let trustLogosFromBody = Array.isArray(cottonTrust.cottonTrustLogo)
-      ? cottonTrust.cottonTrustLogo.filter((logo) => logo !== "")
+    // ---------- TRUST ----------
+    let trustLogos = Array.isArray(cottonTrust.cottonTrustLogo)
+      ? cottonTrust.cottonTrustLogo.filter(Boolean)
       : [];
 
     if (req.files?.cottonTrustLogoFiles) {
@@ -98,9 +108,9 @@ exports.updateCottonPage = async (req, res) => {
         ? req.files.cottonTrustLogoFiles
         : [req.files.cottonTrustLogoFiles];
       const uploaded = files.map((f) => saveFile(f, "cotton/trust"));
-      trustLogosFromBody = [...trustLogosFromBody, ...uploaded];
+      trustLogos = [...trustLogos, ...uploaded];
     }
-    cottonTrust.cottonTrustLogo = trustLogosFromBody;
+    cottonTrust.cottonTrustLogo = trustLogos;
 
     if (req.files?.cottonTrustImgFile) {
       cottonTrust.cottonTrustImg = saveFile(req.files.cottonTrustImgFile, "cotton/trust");
@@ -110,9 +120,9 @@ exports.updateCottonPage = async (req, res) => {
       cottonTrust.cottonTrustImg = existing.cottonTrust?.cottonTrustImg || "";
     }
 
-    // ---------------- MEMBER ----------------
-    let memberImgsFromBody = Array.isArray(cottonMember.cottonMemberImg)
-      ? cottonMember.cottonMemberImg.filter((img) => img !== "")
+    // ---------- MEMBER ----------
+    let memberImgs = Array.isArray(cottonMember.cottonMemberImg)
+      ? cottonMember.cottonMemberImg.filter(Boolean)
       : [];
 
     if (req.files?.cottonMemberImgFiles) {
@@ -120,30 +130,55 @@ exports.updateCottonPage = async (req, res) => {
         ? req.files.cottonMemberImgFiles
         : [req.files.cottonMemberImgFiles];
       const uploaded = files.map((f) => saveFile(f, "cotton/member"));
-      memberImgsFromBody = [...memberImgsFromBody, ...uploaded];
+      memberImgs = [...memberImgs, ...uploaded];
     }
-    cottonMember.cottonMemberImg = memberImgsFromBody;
+    cottonMember.cottonMemberImg = memberImgs;
 
-    // ---------------- 🆕 SEO META ----------------
-    // (Optional) Handle ogImage upload
-    if (req.files?.cottonSeoOgImageFile) {
-      seoMeta.ogImage = saveFile(req.files.cottonSeoOgImageFile, "cotton/seo");
-    } else if (seoMeta.ogImage === "") {
-      seoMeta.ogImage = "";
-    } else {
-      seoMeta.ogImage = existing.seoMeta?.ogImage || "";
+    // ---------- TEAM ----------
+    if (cottonTeam.aboutTeamIntro || cottonTeam.aboutTeam) {
+      existing.cottonTeam = {
+        aboutTeamIntro: cottonTeam.aboutTeamIntro || existing.cottonTeam?.aboutTeamIntro || {
+          tag: { en: "", vi: "" },
+          heading: { en: "", vi: "" },
+          description: { en: "", vi: "" },
+        },
+        aboutTeam: cottonTeam.aboutTeam || existing.cottonTeam?.aboutTeam || {},
+      };
     }
 
-    // ---------------- SAVE ----------------
-    existing.cottonBanner = cottonBanner;
-    existing.cottonSupplier = cottonSupplier;
-    existing.cottonTrust = cottonTrust;
-    existing.cottonMember = cottonMember;
-    existing.seoMeta = seoMeta; // ✅ Save SEO meta
+    // ---------- SEO META ----------
+   seoMeta.metaTitle = {
+  en: seoMeta.metaTitle?.en || "",
+  vi: seoMeta.metaTitle?.vi || "",
+};
 
-    await existing.save();
-    res.json({ message: "Cotton Page updated successfully", cotton: existing });
+seoMeta.metaDescription = {
+  en: seoMeta.metaDescription?.en || "",
+  vi: seoMeta.metaDescription?.vi || "",
+};
+
+seoMeta.metaKeywords = {
+  en: seoMeta.metaKeywords?.en || "",
+  vi: seoMeta.metaKeywords?.vi || "",
+};
+
+// ✅ Assign and merge safely
+existing.seoMeta = {
+  ...existing.seoMeta?.toObject?.(),
+  ...seoMeta,
+};
+
+// ---------------- SAVE ----------------
+existing.cottonBanner = cottonBanner;
+existing.cottonSupplier = updatedSuppliers;
+existing.cottonTrust = cottonTrust;
+existing.cottonMember = cottonMember;
+existing.cottonTeam = cottonTeam;
+
+await existing.save();
+res.json({ message: "SEO Meta updated successfully", cotton: existing });
   } catch (err) {
+    console.error("❌ CottonPage update error:", err);
     res.status(500).json({ error: err.message });
   }
 };

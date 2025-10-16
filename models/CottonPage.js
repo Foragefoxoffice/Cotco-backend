@@ -52,6 +52,20 @@ const cottonMemberSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// 5️⃣ TEAM SECTION
+const cottonTeamSchema = new mongoose.Schema(
+  {
+    aboutTeamIntro: {
+      tag: multiLangField,
+      heading: multiLangField,
+      description: multiLangField,
+    },
+    aboutTeam: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { _id: false }
+);
+
+
 // 5️⃣ 🆕 SEO META SECTION
 const seoMetaSchema = new mongoose.Schema(
   {
@@ -72,6 +86,7 @@ const cottonPageSchema = new mongoose.Schema(
     cottonSupplier: [cottonSupplierSchema],
     cottonTrust: cottonTrustSchema,
     cottonMember: cottonMemberSchema,
+    cottonTeam: cottonTeamSchema,
     seoMeta: seoMetaSchema, // ✅ added for SEO panel support
   },
   { timestamps: true }

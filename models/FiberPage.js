@@ -86,6 +86,42 @@ const fiberProductsSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* 7️⃣ Fiber Team Section */
+const fiberTeamMemberSchema = new mongoose.Schema(
+  {
+    teamName: multiLangField,
+    teamDesgn: multiLangField,
+    teamEmail: { type: String, default: "" },
+    teamPhone: { type: String, default: "" }, // ✅ NEW FIELD
+  },
+  { _id: false }
+);
+
+
+const fiberTeamGroupSchema = new mongoose.Schema(
+  {
+    teamLabel: multiLangField,
+    members: [fiberTeamMemberSchema],
+  },
+  { _id: false }
+);
+
+const fiberTeamSchema = new mongoose.Schema(
+  {
+    aboutTeamIntro: {
+      tag: multiLangField,
+      heading: multiLangField,
+      description: multiLangField,
+    },
+    aboutTeam: {
+      type: Map,
+      of: fiberTeamGroupSchema,
+      default: {},
+    },
+  },
+  { _id: false }
+);
+
 /* 6️⃣ Certification Section */
 const fiberCertificationSchema = new mongoose.Schema(
   {
@@ -119,6 +155,7 @@ const fiberPageSchema = new mongoose.Schema(
     fiberSupplier: fiberSupplierSchema,
     fiberProducts: fiberProductsSchema,
     fiberCertification: fiberCertificationSchema,
+    fiberTeam: fiberTeamSchema,
     seoMeta: seoMetaSchema, // ✅ added SEO meta section
   },
   { timestamps: true }

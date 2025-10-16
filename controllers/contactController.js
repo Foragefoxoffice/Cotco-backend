@@ -42,6 +42,7 @@ exports.updateContactPage = async (req, res) => {
     const contactLocation = safeParse(data.contactLocation, existing.contactLocation || {});
     const contactHours = safeParse(data.contactHours, existing.contactHours || {});
     const contactMap = safeParse(data.contactMap, existing.contactMap || {});
+    const contactTeam = safeParse(data.contactTeam, existing.contactTeam || {});
     const seoMeta = safeParse(data.contactSeoMeta, existing.seoMeta || {}); // 🔥 main fix
 
     // ✅ Handle Banner
@@ -75,6 +76,7 @@ exports.updateContactPage = async (req, res) => {
     existing.contactLocation = contactLocation;
     existing.contactHours = contactHours;
     existing.contactMap = contactMap;
+    existing.contactTeam = contactTeam; 
     existing.seoMeta = seoMeta;
 
     await existing.save();

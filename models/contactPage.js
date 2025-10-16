@@ -53,7 +53,7 @@ const contactMapSchema = new mongoose.Schema(
   { _id: false }
 );
 
-/* 6️⃣ 🆕 SEO Meta Section */
+/* 6️⃣ SEO Meta Section */
 const seoMetaSchema = new mongoose.Schema(
   {
     metaTitle: multiLangField,
@@ -66,6 +66,33 @@ const seoMetaSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/* 7️⃣ Contact Team Members */
+const contactTeamMemberSchema = new mongoose.Schema(
+  {
+    teamName: multiLangField, // member name
+    teamDesgn: multiLangField, // designation
+    teamEmail: { type: String, default: "" },
+    teamPhone: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+/* 8️⃣ Contact Team Section */
+const contactTeamSchema = new mongoose.Schema(
+  {
+    teamIntro: {
+      tag: multiLangField,
+      heading: multiLangField,
+      description: multiLangField,
+    },
+    teamList: {
+      type: mongoose.Schema.Types.Mixed, // stores dynamic team groups
+      default: {},
+    },
+  },
+  { _id: false }
+);
+
 /* 🧩 MAIN CONTACT PAGE SCHEMA */
 const contactPageSchema = new mongoose.Schema(
   {
@@ -74,7 +101,8 @@ const contactPageSchema = new mongoose.Schema(
     contactLocation: contactLocationSchema,
     contactHours: contactHoursSchema,
     contactMap: contactMapSchema,
-    seoMeta: seoMetaSchema, // ✅ Added SEO support
+    contactTeam: contactTeamSchema,
+    seoMeta: seoMetaSchema,
   },
   { timestamps: true }
 );

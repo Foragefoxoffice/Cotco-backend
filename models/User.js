@@ -14,14 +14,17 @@ const userSchema = new mongoose.Schema({
     en: { type: String, required: [true, "Please add English first name"], trim: true },
     vi: { type: String, default: "", trim: true },
   },
+
   middleName: {
     en: { type: String, default: "", trim: true },
     vi: { type: String, default: "", trim: true },
   },
+
   lastName: {
-    en: { type: String, required: [true, "Please add English last name"], trim: true },
+    en: { type: String, default: "", trim: true },
     vi: { type: String, default: "", trim: true },
   },
+
   email: {
     type: String,
     required: [true, "Please add an email"],
@@ -36,7 +39,6 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    required: [true, "Please add a password"],
     minlength: 6,
     select: false,
   },
@@ -44,7 +46,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
-    required: true,
+    required: [true, "Please assign a role"],
   },
 
   status: {
@@ -53,22 +55,15 @@ const userSchema = new mongoose.Schema({
     default: "Active",
   },
 
-  phone: {
-    type: String,
-    required: [true, "Please add a phone number"],
-    trim: true,
-  },
+  phone: { type: String, trim: true },
 
-  profileImage: {
-    type: String,
-    default: "",
-  },
+  profileImage: { type: String, default: "" },
 
-  // ✅ Multilingual Department and Designation
   department: {
     en: { type: String, default: "" },
     vi: { type: String, default: "" },
   },
+
   designation: {
     en: { type: String, default: "" },
     vi: { type: String, default: "" },
@@ -76,9 +71,10 @@ const userSchema = new mongoose.Schema({
 
   gender: {
     type: String,
-    enum: ["Male", "Female", "Others"],
+    enum: ["Male", "Female", "Others",""],
     default: "Others",
   },
+
   dateOfBirth: Date,
   dateOfJoining: Date,
 
@@ -88,12 +84,11 @@ const userSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-
 /* =========================================================
    🔐 Encrypt password before saving
 ========================================================= */
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password") || !this.password) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
@@ -121,7 +116,7 @@ userSchema.methods.getSignedJwtToken = function () {
   return jwt.sign(
     {
       id: this._id,
-      role: this.role, // include role reference for auth
+      role: this.role,
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE || "30d" }

@@ -81,17 +81,46 @@ exports.register = asyncHandler(async (req, res, next) => {
   }`.trim();
 
   // ✅ Prepare email message
-  const message = `
-    <h2>Welcome ${fullName}</h2>
-    <p>Your account has been created successfully.</p>
-    <p><strong>Email:</strong> ${email}</p>
-    <p><strong>Password:</strong> ${rawPassword}</p>
-    <p><strong>Role:</strong> ${role.name}</p>
-    <p><strong>Gender:</strong> ${gender || "—"}</p>
-    <p><strong>Date of Joining:</strong> ${
-      dateOfJoining ? new Date(dateOfJoining).toLocaleDateString("en-GB") : "—"
-    }</p>
-  `;
+const message = `
+  <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background: #ffffff; border: 1px solid #dcdcdc; border-radius: 8px; overflow: hidden;">
+    <div style="background: #ffffff; padding: 20px 30px;">
+      <h2 style="color: #000000; font-weight: 600; font-size: 20px; margin-bottom: 10px;">
+        Welcome! Your Cotco CMS Management account is ready
+      </h2>
+      <img src="https://cotco-vn.com/img/home/footerLogo.png" alt="Cotco Logo" style="height: 60px; margin: 15px 0;">
+      <p style="color: #333333; line-height: 1.6; font-size: 15px;">
+        Hi <strong>${fullName}</strong>,<br>
+        You have been invited to join <strong>Cotco CMS Management</strong> — our Website Content Management platform.<br>
+        Click the button below to get started:
+      </p>
+
+      <div style="text-align: left; margin: 25px 0;">
+        <a href="https://cotco-vn.com/login"
+           style="background: #0085C8; color: #fff; text-decoration: none; padding: 12px 28px; font-size: 15px; font-weight: 500; display: inline-block;">
+          Login Here
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid #e5e5e5; margin: 25px 0;"></div>
+
+      <p style="color: #333333; font-size: 15px; line-height: 1.6; margin: 0;">
+        <strong>Email:</strong> ${email}<br>
+        <strong>Temporary Password:</strong> ${rawPassword}<br>
+        <strong>Role:</strong> ${role?.name?.en || "—"}<br>
+      </p>
+
+      <p style="color: #333333; font-size: 15px; margin-top: 25px;">
+        Regards,<br>
+        <strong>Cotco</strong>
+      </p>
+    </div>
+
+    <div style="background: #f7f7f7; text-align: center; padding: 10px; font-size: 12px; color: #777;">
+      © ${new Date().getFullYear()} Cotco — Cotton Fiber Textile Machine
+    </div>
+  </div>
+`;
+
 
   try {
     await sendEmail({

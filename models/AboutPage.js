@@ -6,7 +6,9 @@ const multiLangField = {
   vi: { type: String, default: "" },
 };
 
-// 1️⃣ HERO SECTION
+/* ======================================================
+   1️⃣ HERO SECTION
+====================================================== */
 const aboutHeroSchema = new mongoose.Schema(
   {
     aboutTitle: multiLangField,
@@ -15,7 +17,9 @@ const aboutHeroSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 2️⃣ OVERVIEW
+/* ======================================================
+   2️⃣ OVERVIEW
+====================================================== */
 const aboutOverviewSchema = new mongoose.Schema(
   {
     aboutOverviewImg: { type: String, default: "" },
@@ -25,7 +29,9 @@ const aboutOverviewSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 3️⃣ FOUNDER SECTION
+/* ======================================================
+   3️⃣ FOUNDER SECTION
+====================================================== */
 const aboutFounderSchema = new mongoose.Schema(
   {
     aboutFounderTitle: multiLangField,
@@ -38,47 +44,59 @@ const aboutFounderSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 4️⃣ MISSION & VISION
+/* ======================================================
+   4️⃣ MISSION & VISION
+====================================================== */
 const aboutMissionVissionSchema = new mongoose.Schema(
   {
     aboutMissionVissionTitle: multiLangField,
-
-    aboutMissionVissionSubhead1: multiLangField,
-    aboutMissionVissionDes1: multiLangField,
-    aboutMissionVissionSubhead2: multiLangField,
-    aboutMissionVissionDes2: multiLangField,
-    aboutMissionVissionSubhead3: multiLangField,
-    aboutMissionVissionDes3: multiLangField,
-
+    headingBlocks: [
+      new mongoose.Schema(
+        {
+          title: multiLangField,
+          desc: multiLangField,
+        },
+        { _id: false }
+      ),
+    ],
     aboutMissionVissionBoxCount1: { type: Number, default: 0 },
     aboutMissionBoxDes1: multiLangField,
     aboutMissionVissionBoxCount2: { type: Number, default: 0 },
     aboutMissionBoxDes2: multiLangField,
     aboutMissionVissionBoxCount3: { type: Number, default: 0 },
     aboutMissionBoxDes3: multiLangField,
+    aboutMissionVissionBoxCount4: { type: Number, default: 0 },
+    aboutMissionBoxDes4: multiLangField,
   },
   { _id: false }
 );
 
-// 5️⃣ CORE VALUES
+/* ======================================================
+   5️⃣ CORE VALUES
+====================================================== */
 const aboutCoreSchema = new mongoose.Schema(
   {
+    aboutCoreTitle: { en: { type: String, default: "" }, vi: { type: String, default: "" } }, // ✅ NEW main title
+
     aboutCoreBg1: { type: String, default: "" },
-    aboutCoreTitle1: multiLangField,
-    aboutCoreDes1: multiLangField,
+    aboutCoreTitle1: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
+    aboutCoreDes1: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
 
     aboutCoreBg2: { type: String, default: "" },
-    aboutCoreTitle2: multiLangField,
-    aboutCoreDes2: multiLangField,
+    aboutCoreTitle2: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
+    aboutCoreDes2: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
 
     aboutCoreBg3: { type: String, default: "" },
-    aboutCoreTitle3: multiLangField,
-    aboutCoreDes3: multiLangField,
+    aboutCoreTitle3: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
+    aboutCoreDes3: { en: { type: String, default: "" }, vi: { type: String, default: "" } },
   },
   { _id: false }
 );
 
-// 6️⃣ HISTORY
+
+/* ======================================================
+   6️⃣ HISTORY
+====================================================== */
 const aboutHistorySchema = new mongoose.Schema(
   {
     year: { type: String, default: "" },
@@ -88,12 +106,23 @@ const aboutHistorySchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 7️⃣ TEAMS (Dynamic, bilingual)
+const aboutHistorySectionSchema = new mongoose.Schema(
+  {
+    aboutHistoryTitle: multiLangField,
+    aboutHistory: [aboutHistorySchema],
+  },
+  { _id: false }
+);
+
+/* ======================================================
+   7️⃣ TEAM SECTION (Dynamic Teams)
+====================================================== */
 const teamMemberSchema = new mongoose.Schema(
   {
     teamName: multiLangField,
     teamDesgn: multiLangField,
     teamEmail: { type: String, default: "" },
+    teamPhone: { type: String, default: "" },
   },
   { _id: false }
 );
@@ -104,7 +133,7 @@ const aboutTeamSchema = new mongoose.Schema(
       type: Map,
       of: new mongoose.Schema(
         {
-          teamLabel: multiLangField, // bilingual team name
+          teamLabel: multiLangField,
           members: [teamMemberSchema],
         },
         { _id: false }
@@ -115,15 +144,37 @@ const aboutTeamSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 8️⃣ ALLIANCES
+/* ======================================================
+   7️⃣.5️⃣ TEAM INTRO SECTION (Top 3 Fields)
+====================================================== */
+const aboutTeamIntroSchema = new mongoose.Schema(
+  {
+    tag: multiLangField, // e.g., "Our People"
+    heading: multiLangField, // e.g., "Meet Our Team"
+    description: multiLangField, // e.g., paragraph
+  },
+  { _id: false }
+);
+
+/* ======================================================
+   8️⃣ ALLIANCES
+====================================================== */
 const aboutAlliancesSchema = new mongoose.Schema(
   {
+    aboutAlliancesTitle: {
+      en: { type: String, default: "" },
+      vi: { type: String, default: "" },
+    },
     aboutAlliancesImg: [{ type: String, default: "" }],
   },
   { _id: false }
 );
 
-// 9️⃣ SEO META
+
+
+/* ======================================================
+   9️⃣ SEO META
+====================================================== */
 const seoMetaSchema = new mongoose.Schema(
   {
     metaTitle: multiLangField,
@@ -133,7 +184,9 @@ const seoMetaSchema = new mongoose.Schema(
   { _id: false }
 );
 
-// 🔹 MAIN ABOUT PAGE SCHEMA
+/* ======================================================
+   🔹 MAIN ABOUT PAGE SCHEMA
+====================================================== */
 const aboutPageSchema = new mongoose.Schema(
   {
     aboutHero: aboutHeroSchema,
@@ -142,6 +195,8 @@ const aboutPageSchema = new mongoose.Schema(
     aboutMissionVission: aboutMissionVissionSchema,
     aboutCore: aboutCoreSchema,
     aboutHistory: [aboutHistorySchema],
+    aboutHistorySection: aboutHistorySectionSchema,
+    aboutTeamIntro: aboutTeamIntroSchema, // ✅ New Section
     aboutTeam: aboutTeamSchema,
     aboutAlliances: aboutAlliancesSchema,
     seoMeta: seoMetaSchema,
@@ -149,6 +204,8 @@ const aboutPageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🧩 Prevent OverwriteModelError
+/* ======================================================
+   🧩 EXPORT MODEL SAFELY
+====================================================== */
 module.exports =
   mongoose.models.AboutPage || mongoose.model("AboutPage", aboutPageSchema);
