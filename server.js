@@ -76,7 +76,7 @@ io.on("connection", (socket) => {
 app.use(
   fileUpload({
     createParentPath: true,
-    useTempFiles: true,
+    useTempFiles: false,
     tempFileDir: "/tmp/",
     limits: { fileSize: 50 * 1024 * 1024, files: 100, fields: 2000 },
     abortOnLimit: false,

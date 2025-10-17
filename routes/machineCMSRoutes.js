@@ -5,7 +5,8 @@ const {
   updateMachineCMSPage,
 } = require("../controllers/machineCMSController");
 
+// ✅ Must match the request methods
 router.get("/", getMachineCMSPage);
-router.post("/", updateMachineCMSPage);
+router.post("/", updateMachineCMSPage); // <-- make sure it's POST, not PUT
 
 module.exports = router;
