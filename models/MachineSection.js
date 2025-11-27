@@ -102,6 +102,7 @@ const sectionSchema = new mongoose.Schema(
     // optional sub-structures
     table: { type: tableSchema, default: undefined },
     listItems: { type: [listItemSchema], default: undefined },
+    listTitle: { en: { type: String }, vi: { type: String } },
     blocks: { type: [blockSchema], default: undefined },
     button: { type: buttonSchema, default: undefined }, // ✅ added button
     tabs: {

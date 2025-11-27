@@ -47,7 +47,9 @@ exports.getAboutPage = async (req, res) => {
         },
         aboutMissionVission: {
           aboutMissionVissionTitle: { en: "", vi: "" },
-          headingBlocks: [{ title: { en: "", vi: "" }, desc: { en: "", vi: "" } }],
+          headingBlocks: [
+            { title: { en: "", vi: "" }, desc: { en: "", vi: "" } },
+          ],
         },
         aboutCore: {
           aboutCoreTitle: { en: "", vi: "" },
@@ -125,11 +127,15 @@ exports.getAboutPage = async (req, res) => {
 exports.updateAboutPage = async (req, res) => {
   try {
     const data = req.body;
-    const section = data.section || 
-  (data.aboutTeam ? "aboutTeam" : 
-  data.aboutHero ? "aboutHero" : 
-  data.aboutOverview ? "aboutOverview" : 
-  "");
+    const section =
+      data.section ||
+      (data.aboutTeam
+        ? "aboutTeam"
+        : data.aboutHero
+        ? "aboutHero"
+        : data.aboutOverview
+        ? "aboutOverview"
+        : "");
 
     const existing = (await AboutPage.findOne()) || new AboutPage({});
 
@@ -211,177 +217,207 @@ exports.updateAboutPage = async (req, res) => {
       }
 
       case "aboutHistory": {
-  const aboutHistoryData = safeParse(
-    data.aboutHistory,
-    existing.aboutHistorySection?.aboutHistory || []
-  );
+        const aboutHistoryData = safeParse(
+          data.aboutHistory,
+          existing.aboutHistorySection?.aboutHistory || []
+        );
 
-  const aboutHistoryTitle = safeParse(
-    data.aboutHistoryTitle,
-    existing.aboutHistorySection?.aboutHistoryTitle || { en: "", vi: "" }
-  );
+        const aboutHistoryTitle = safeParse(
+          data.aboutHistoryTitle,
+          existing.aboutHistorySection?.aboutHistoryTitle || { en: "", vi: "" }
+        );
 
-  // Handle image uploads if present
-  const updatedHistory = aboutHistoryData.map((item, i) => {
-    const imgField = `historyImage${i}`;
-    const file = req.files?.[imgField];
-    if (file) {
-      const savedPath = saveFile(file, "about");
-      return { ...item, image: savedPath };
-    }
-    return {
-      ...item,
-      image:
-        item.image ||
-        existing.aboutHistorySection?.aboutHistory?.[i]?.image ||
-        "",
-    };
-  });
+        // ✅ Process image uploads or removals properly
+        const updatedHistory = aboutHistoryData.map((item, i) => {
+          const imgField = `historyImage${i}`;
+          const file = req.files?.[imgField];
+          const oldImage =
+            existing.aboutHistorySection?.aboutHistory?.[i]?.image;
 
-  existing.aboutHistorySection = {
-    aboutHistoryTitle,
-    aboutHistory: updatedHistory,
-  };
+          // 🖼 If new file uploaded → replace image
+          if (file) {
+            // ✅ Optionally delete old image from disk
+            if (
+              oldImage &&
+              fs.existsSync(path.join(__dirname, "..", oldImage))
+            ) {
+              try {
+                fs.unlinkSync(path.join(__dirname, "..", oldImage));
+              } catch (err) {
+                console.warn("⚠️ Failed to delete old image:", err.message);
+              }
+            }
 
-  await existing.save();
+            const savedPath = saveFile(file, "about");
+            return { ...item, image: savedPath };
+          }
 
-  return res.json({
-    message: "History section updated successfully",
-    about: existing,
-  });
-}
+          // ❌ If frontend cleared image → remove from DB & delete old file
+          if (!item.image || item.image.trim() === "") {
+            if (
+              oldImage &&
+              fs.existsSync(path.join(__dirname, "..", oldImage))
+            ) {
+              try {
+                fs.unlinkSync(path.join(__dirname, "..", oldImage));
+              } catch (err) {
+                console.warn("⚠️ Failed to delete cleared image:", err.message);
+              }
+            }
+            return { ...item, image: "" };
+          }
 
+          // ✅ Otherwise keep existing image path
+          return { ...item, image: oldImage || "" };
+        });
+
+        // ✅ Save clean structure
+        existing.aboutHistorySection = {
+          aboutHistoryTitle,
+          aboutHistory: updatedHistory,
+        };
+
+        await existing.save();
+
+        return res.json({
+          message: "History section updated successfully",
+          about: existing,
+        });
+      }
 
       case "aboutCore": {
-  // ✅ Parse incoming data or fallback to existing
-  const aboutCore = safeParse(data.aboutCore, existing.aboutCore || {});
+        // ✅ Parse incoming data or fallback to existing
+        const aboutCore = safeParse(data.aboutCore, existing.aboutCore || {});
 
-  // ✅ Ensure multilingual fields exist
-  aboutCore.aboutCoreTitle = {
-    en:
-      aboutCore.aboutCoreTitle?.en ||
-      existing.aboutCore?.aboutCoreTitle?.en ||
-      "",
-    vi:
-      aboutCore.aboutCoreTitle?.vi ||
-      existing.aboutCore?.aboutCoreTitle?.vi ||
-      "",
-  };
+        // ✅ Ensure multilingual fields exist
+        aboutCore.aboutCoreTitle = {
+          en:
+            aboutCore.aboutCoreTitle?.en ||
+            existing.aboutCore?.aboutCoreTitle?.en ||
+            "",
+          vi:
+            aboutCore.aboutCoreTitle?.vi ||
+            existing.aboutCore?.aboutCoreTitle?.vi ||
+            "",
+        };
 
-  // ✅ Loop through all 3 core blocks
-  [1, 2, 3].forEach((i) => {
-    const fileKey = `aboutCoreBg${i}File`;
-    const fieldKey = `aboutCoreBg${i}`;
+        // ✅ Loop through all 3 core blocks
+        [1, 2, 3].forEach((i) => {
+          const fileKey = `aboutCoreBg${i}File`;
+          const fieldKey = `aboutCoreBg${i}`;
 
-    // Handle image file upload (or keep existing)
-    if (req.files?.[fileKey]) {
-      aboutCore[fieldKey] = saveFile(req.files[fileKey], "about");
-    } else {
-      aboutCore[fieldKey] =
-        aboutCore[fieldKey] || existing.aboutCore?.[fieldKey] || "";
-    }
+          // Handle image file upload (or keep existing)
+          if (req.files?.[fileKey]) {
+            aboutCore[fieldKey] = saveFile(req.files[fileKey], "about");
+          } else {
+            aboutCore[fieldKey] =
+              aboutCore[fieldKey] || existing.aboutCore?.[fieldKey] || "";
+          }
 
-    // ✅ Ensure multilingual text structure exists
-    aboutCore[`aboutCoreTitle${i}`] = {
-      en:
-        aboutCore[`aboutCoreTitle${i}`]?.en ||
-        existing.aboutCore?.[`aboutCoreTitle${i}`]?.en ||
-        "",
-      vi:
-        aboutCore[`aboutCoreTitle${i}`]?.vi ||
-        existing.aboutCore?.[`aboutCoreTitle${i}`]?.vi ||
-        "",
-    };
+          // ✅ Ensure multilingual text structure exists
+          aboutCore[`aboutCoreTitle${i}`] = {
+            en:
+              aboutCore[`aboutCoreTitle${i}`]?.en ||
+              existing.aboutCore?.[`aboutCoreTitle${i}`]?.en ||
+              "",
+            vi:
+              aboutCore[`aboutCoreTitle${i}`]?.vi ||
+              existing.aboutCore?.[`aboutCoreTitle${i}`]?.vi ||
+              "",
+          };
 
-    aboutCore[`aboutCoreDes${i}`] = {
-      en:
-        aboutCore[`aboutCoreDes${i}`]?.en ||
-        existing.aboutCore?.[`aboutCoreDes${i}`]?.en ||
-        "",
-      vi:
-        aboutCore[`aboutCoreDes${i}`]?.vi ||
-        existing.aboutCore?.[`aboutCoreDes${i}`]?.vi ||
-        "",
-    };
-  });
+          aboutCore[`aboutCoreDes${i}`] = {
+            en:
+              aboutCore[`aboutCoreDes${i}`]?.en ||
+              existing.aboutCore?.[`aboutCoreDes${i}`]?.en ||
+              "",
+            vi:
+              aboutCore[`aboutCoreDes${i}`]?.vi ||
+              existing.aboutCore?.[`aboutCoreDes${i}`]?.vi ||
+              "",
+          };
+        });
 
-  // ✅ Save merged object safely
-  existing.aboutCore = aboutCore;
-  await existing.save();
+        // ✅ Save merged object safely
+        existing.aboutCore = aboutCore;
+        await existing.save();
 
-  return res.json({
-    message: "Core Values section updated successfully",
-    about: existing,
-  });
-}
+        return res.json({
+          message: "Core Values section updated successfully",
+          about: existing,
+        });
+      }
 
+      case "aboutTeam": {
+        // 🧠 Parse incoming data safely
+        let aboutTeam = safeParse(
+          data.aboutTeam,
+          existing.aboutTeam || { dynamicTeams: {} }
+        );
 
-case "aboutTeam": {
-  // 🧠 Parse incoming data safely
-  let aboutTeam = safeParse(
-    data.aboutTeam,
-    existing.aboutTeam || { dynamicTeams: {} }
-  );
+        const aboutTeamIntro = safeParse(
+          data.aboutTeamIntro,
+          existing.aboutTeamIntro || {
+            tag: { en: "", vi: "" },
+            heading: { en: "", vi: "" },
+            description: { en: "", vi: "" },
+          }
+        );
 
-  const aboutTeamIntro = safeParse(
-    data.aboutTeamIntro,
-    existing.aboutTeamIntro || {
-      tag: { en: "", vi: "" },
-      heading: { en: "", vi: "" },
-      description: { en: "", vi: "" },
-    }
-  );
+        // 🔄 Normalize structure
+        if (!aboutTeam.dynamicTeams) aboutTeam = { dynamicTeams: aboutTeam };
 
-  // 🔄 Normalize structure
-  if (!aboutTeam.dynamicTeams) aboutTeam = { dynamicTeams: aboutTeam };
+        // ✅ Convert any Maps in existing data to plain objects
+        let existingTeams = {};
+        if (existing.aboutTeam?.dynamicTeams instanceof Map) {
+          existingTeams = Object.fromEntries(existing.aboutTeam.dynamicTeams);
+        } else if (typeof existing.aboutTeam?.dynamicTeams === "object") {
+          existingTeams = existing.aboutTeam.dynamicTeams;
+        }
 
-  // ✅ Convert any Maps in existing data to plain objects
-  let existingTeams = {};
-  if (existing.aboutTeam?.dynamicTeams instanceof Map) {
-    existingTeams = Object.fromEntries(existing.aboutTeam.dynamicTeams);
-  } else if (typeof existing.aboutTeam?.dynamicTeams === "object") {
-    existingTeams = existing.aboutTeam.dynamicTeams;
-  }
+        const newTeams = aboutTeam.dynamicTeams || {};
 
-  const newTeams = aboutTeam.dynamicTeams || {};
+        // ✅ Always reinitialize Map (handles missing field case)
+        existing.aboutTeam = {
+          dynamicTeams: new Map(
+            Object.entries({ ...existingTeams, ...newTeams })
+          ),
+        };
 
-  // ✅ Always reinitialize Map (handles missing field case)
-  existing.aboutTeam = {
-    dynamicTeams: new Map(Object.entries({ ...existingTeams, ...newTeams })),
-  };
+        // ✅ Update intro text
+        existing.aboutTeamIntro = aboutTeamIntro;
 
-  // ✅ Update intro text
-  existing.aboutTeamIntro = aboutTeamIntro;
+        // ✅ Force Mongoose to mark it modified (important after deletion)
+        existing.markModified("aboutTeam");
+        existing.markModified("aboutTeam.dynamicTeams");
 
-  // ✅ Force Mongoose to mark it modified (important after deletion)
-  existing.markModified("aboutTeam");
-  existing.markModified("aboutTeam.dynamicTeams");
+        await existing.save();
 
-  await existing.save();
-
-  return res.json({ message: "Team updated successfully", about: existing });
-}
+        return res.json({
+          message: "Team updated successfully",
+          about: existing,
+        });
+      }
 
       case "aboutAlliances": {
-  const aboutAlliances = safeParse(
-    data.aboutAlliances,
-    existing.aboutAlliances || {}
-  );
-  if (req.files?.aboutAlliancesFiles) {
-    const files = Array.isArray(req.files.aboutAlliancesFiles)
-      ? req.files.aboutAlliancesFiles
-      : [req.files.aboutAlliancesFiles];
-    const uploadedPaths = files.map((f) => saveFile(f, "alliances"));
-    aboutAlliances.aboutAlliancesImg = [
-      ...(existing.aboutAlliances?.aboutAlliancesImg || []),
-      ...uploadedPaths,
-    ];
-  }
-  existing.aboutAlliances = aboutAlliances;
-  await existing.save();
-  return res.json({ message: "Alliances updated", about: existing });
-}
-
+        const aboutAlliances = safeParse(
+          data.aboutAlliances,
+          existing.aboutAlliances || {}
+        );
+        if (req.files?.aboutAlliancesFiles) {
+          const files = Array.isArray(req.files.aboutAlliancesFiles)
+            ? req.files.aboutAlliancesFiles
+            : [req.files.aboutAlliancesFiles];
+          const uploadedPaths = files.map((f) => saveFile(f, "alliances"));
+          aboutAlliances.aboutAlliancesImg = [
+            ...(existing.aboutAlliances?.aboutAlliancesImg || []),
+            ...uploadedPaths,
+          ];
+        }
+        existing.aboutAlliances = aboutAlliances;
+        await existing.save();
+        return res.json({ message: "Alliances updated", about: existing });
+      }
 
       default:
         break;

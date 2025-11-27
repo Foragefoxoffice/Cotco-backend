@@ -26,7 +26,7 @@ exports.updateFooterPage = async (req, res) => {
     let existing = await FooterPage.findOne();
     if (!existing) existing = new FooterPage({});
 
-    // ✅ Handle Logo
+    // ------------------ LOGO ------------------ //
     if (req.files?.footerLogoFile) {
       const file = req.files.footerLogoFile;
 
@@ -38,18 +38,48 @@ exports.updateFooterPage = async (req, res) => {
       }
 
       existing.footerLogo = saveFile(file, "footer");
-    } else {
-      existing.footerLogo = existing.footerLogo || "";
     }
 
-    // ✅ Handle Socials
+    // ------------------ SOCIAL ICON IMAGES ------------------ //
+    let socials = [];
     if (req.body.footerSocials) {
-      existing.footerSocials = JSON.parse(req.body.footerSocials);
+      socials = JSON.parse(req.body.footerSocials);
+    }
+
+    // loop all possible iconFile_N uploaded files
+    if (req.files) {
+      Object.keys(req.files).forEach((key) => {
+        if (key.startsWith("iconFile_")) {
+          const index = Number(key.replace("iconFile_", ""));
+          const file = req.files[key];
+
+          const savedPath = saveFile(file, "footer/socials");
+
+          // update the JSON object with saved path
+          if (socials[index]) {
+            socials[index].iconImage = savedPath;
+          }
+        }
+      });
+    }
+
+    existing.footerSocials = socials;
+
+    // ------------------ COPYRIGHT ------------------ //
+    if (req.body.copyrights !== undefined) {
+      existing.copyrights = req.body.copyrights;
     }
 
     await existing.save();
-    res.json({ message: "Footer updated successfully", footer: existing });
+
+    res.json({
+      message: "Footer updated successfully",
+      footer: existing,
+    });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
+

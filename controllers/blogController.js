@@ -32,16 +32,23 @@ exports.getBlogs = async (req, res) => {
  * @desc    Get single blog by slug
  * @route   GET /api/blogs/:slug
  */
+/**
+ * @desc    Get single blog by slug
+ * @route   GET /api/blogs/:slug
+ */
 exports.getBlogBySlug = async (req, res) => {
   try {
+    console.log("🔎 Searching for slug:", req.params.slug);
+
     const blog = await Blog.findOne({ slug: req.params.slug })
       .populate("author", "name email")
-      .populate("category", "name")
-      .populate("mainCategory", "name");
+      .populate("category", "name slug")
+      .populate("mainCategory", "name slug");
 
-    if (!blog) {
+    console.log("✅ Found:", blog ? blog._id : "Not found");
+
+    if (!blog)
       return res.status(404).json({ success: false, error: "Blog not found" });
-    }
 
     res.json({ success: true, data: blog });
   } catch (error) {
@@ -49,6 +56,7 @@ exports.getBlogBySlug = async (req, res) => {
     res.status(500).json({ success: false, error: "Server Error" });
   }
 };
+
 
 /**
  * @desc    Create a blog
@@ -92,8 +100,8 @@ exports.createBlog = async (req, res) => {
 
     const populatedBlog = await Blog.findById(blog._id)
       .populate("author", "name email")
-      .populate("category", "name")
-      .populate("mainCategory", "name");
+      .populate("category", "name slug")
+.populate("mainCategory", "name slug")
 
     res.status(201).json({ success: true, data: populatedBlog });
   } catch (error) {

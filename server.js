@@ -41,6 +41,7 @@ const mainCategoryRoutes = require("./routes/mainCategoryRoutes");
 const contactEntriesRoutes = require("./routes/contactEntriesRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const machineCMSRoutes = require("./routes/machineCMSRoutes");
+const knowledgeRoutes = require("./routes/knowledgeRoutes");
 
 
 // ===== Connect to MongoDB =====
@@ -50,6 +51,8 @@ connectDB();
 const app = express();
 const httpServer = http.createServer(app);
 
+app.set("trust proxy", 1);
+
 // ===== Socket.IO =====
 const io = new Server(httpServer, {
   cors: {
@@ -57,6 +60,7 @@ const io = new Server(httpServer, {
       "http://localhost:9002",
       "http://localhost:5174",
       "http://localhost:5173",
+      "https://cotco-vn.com"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
@@ -71,6 +75,10 @@ io.on("connection", (socket) => {
     console.log(`🔴 Socket disconnected: ${socket.id}`);
   });
 });
+
+// ===== Parse JSON before file upload =====
+app.use(express.json({ limit: "2gb" }));
+app.use(express.urlencoded({ extended: true, limit: "2gb" }));
 
 // ===== File Upload =====
 app.use(
@@ -90,6 +98,7 @@ const allowedOrigins = [
   "http://localhost:9002",
   "http://localhost:5174",
   "http://localhost:5173",
+  "https://cotco-vn.com"
 ];
 
 app.use(
@@ -155,7 +164,6 @@ function safeUse(routePath, router) {
   app.use(routePath, router);
 }
 
-
 // ===== Register Routes Safely =====
 safeUse("/api/v1/auth", authRoutes);
 safeUse("/api/v1/users", userRoutes);
@@ -177,44 +185,117 @@ safeUse("/api/v1/maincategories", mainCategoryRoutes);
 safeUse("/api/v1/contactentries", contactEntriesRoutes);
 safeUse("/api/v1/roles", roleRoutes);
 safeUse("/api/v1/machinescms", machineCMSRoutes);
-
+safeUse("/api/v1/knowledge", knowledgeRoutes);
 
 // ===== Chatbot Endpoint =====
+// ===== Chatbot Endpoint (Multi-language + Cached) =====
+
+// Cache for both EN and VI
+let knowledgeCache = { en: "", vi: "" };
+
+// Initialize cache on startup
+(() => {
+  const dataDir = path.join(__dirname, "data"); // ✅ Fixed path (inside same root)
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
+  const filePaths = {
+    en: path.join(dataDir, "knowledge_en.txt"),
+    vi: path.join(dataDir, "knowledge_vi.txt"),
+  };
+
+  for (const lang of ["en", "vi"]) {
+    try {
+      if (fs.existsSync(filePaths[lang])) {
+        knowledgeCache[lang] = fs.readFileSync(filePaths[lang], "utf8");
+        console.log(`✅ Loaded chatbot knowledge (${lang.toUpperCase()})`);
+      } else {
+        console.log(`⚠️ No knowledge file found for ${lang}, starting empty`);
+        knowledgeCache[lang] = "";
+      }
+    } catch (err) {
+      console.error(`❌ Error reading ${lang} file:`, err.message);
+      knowledgeCache[lang] = "";
+    }
+  }
+})();
+
+// ===== Chatbot Route =====
 app.post("/api/v1/chatbot", async (req, res) => {
   try {
     const { question } = req.body;
-    if (!question)
-      return res
-        .status(400)
-        .json({ success: false, error: "Missing question" });
+    const lang = req.query.lang || "en";
 
-    const knowledge = fs.readFileSync("knowledge.txt", "utf8");
+    if (!question || typeof question !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Missing or invalid question.",
+      });
+    }
+
+    // 🧾 Load knowledge from cache or disk
+    const dataDir = path.join(__dirname, "data");
+    const filePath = path.join(dataDir, `knowledge_${lang}.txt`);
+
+    let knowledge =
+      knowledgeCache[lang] ||
+      (fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "");
+
+    // Refresh cache if missing
+    knowledgeCache[lang] = knowledge;
+
+    // 🧠 Prompt
     const prompt = `
-You are a chatbot for a cotton and fiber company.
-Your ONLY source of truth is the following knowledge.
-If the question cannot be answered from the knowledge, say:
-"I don't know, please check our website."
+You are a professional, friendly AI assistant for COTCO — a company that sells cotton and fiber machines.
+
+Your ONLY source of truth is the knowledge provided below.
+Always answer questions using the information from the knowledge.
+When relevant, include helpful page links provided in the knowledge.
+
+If you cannot find an answer, respond politely with:
+"I’m not sure about that, but please check our website for more details: https://cotco-vn.com"
 
 Knowledge:
 ${knowledge}
 
-Question: ${question}
+User Question: ${question}
+
+Now think carefully and provide a helpful, natural answer based on the knowledge.
+Include page links if relevant.
+If no answer can be found, use the fallback message above.
 Answer:
 `;
 
+    // 🔄 Request to local Ollama model
     const response = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "gemma:2b", prompt, stream: false }),
+      body: JSON.stringify({
+        model: "gemma:2b", // or llama3
+        prompt,
+        stream: false,
+        temperature: 0.3,
+      }),
     });
 
     const data = await response.json();
-    res.json({ success: true, answer: data.response });
+
+    // 🧹 Clean AI response
+    const cleanAnswer = (data.response || "")
+      .replace(/^(Answer:|Response:)\s*/i, "")
+      .trim();
+
+    res.json({
+      success: true,
+      answer:
+        cleanAnswer ||
+        "I’m not sure about that, but please check our website for more details: https://cotco-vn.com",
+    });
   } catch (err) {
     console.error("❌ Chatbot error:", err);
-    res
-      .status(500)
-      .json({ success: false, error: err.message || "Chatbot failed" });
+    res.status(500).json({
+      success: false,
+      error: "Chatbot service failed. Please try again later.",
+    });
   }
 });
 

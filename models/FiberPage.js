@@ -78,7 +78,11 @@ const fiberProductSchema = new mongoose.Schema(
 
 const fiberProductsSchema = new mongoose.Schema(
   {
-    fiberProduct: [fiberProductSchema], // multiple products
+    fiberProductSectionTitle: multiLangField,
+    fiberProductSectionSubtitle: multiLangField,
+
+    fiberProduct: [fiberProductSchema],
+
     fiberProductBottomCon: multiLangField,
     fiberProductButtonText: multiLangField,
     fiberProductButtonLink: { type: String, default: "" },

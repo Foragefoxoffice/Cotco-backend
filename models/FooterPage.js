@@ -2,13 +2,16 @@ const mongoose = require("mongoose");
 
 const footerSchema = new mongoose.Schema(
   {
-    footerLogo: { type: String, default: "" }, // ✅ file path for logo
+    footerLogo: { type: String, default: "" },
+
     footerSocials: [
       {
-        icon: { type: String, required: true }, // lucide-react icon name
-        link: { type: String, required: true }, // social media link
+        iconImage: { type: String, default: "" },  // 👈 path to uploaded image
+        link: { type: String, default: "" },       // 👈 social link
       },
     ],
+
+    copyrights: { type: String, default: "" },
   },
   { timestamps: true }
 );

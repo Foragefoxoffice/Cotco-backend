@@ -24,11 +24,29 @@ const saveFile = (file, folder = "contact") => {
 exports.getContactPage = async (req, res) => {
   try {
     const contact = await ContactPage.findOne();
-    res.json(contact || {});
+
+    if (!contact)
+      return res.json({
+        contactTeam: {
+          teamIntro: {
+            tag: { en: "", vi: "" },
+            heading: { en: "", vi: "" },
+            description: { en: "", vi: "" },
+          },
+          teamList: {},
+        },
+      });
+
+    // ✅ Convert to plain JS object
+    const contactData = contact.toObject({ getters: true, virtuals: false });
+
+    res.json(contactData);
   } catch (err) {
+    console.error("❌ getContactPage error:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.updateContactPage = async (req, res) => {
   try {
@@ -42,7 +60,43 @@ exports.updateContactPage = async (req, res) => {
     const contactLocation = safeParse(data.contactLocation, existing.contactLocation || {});
     const contactHours = safeParse(data.contactHours, existing.contactHours || {});
     const contactMap = safeParse(data.contactMap, existing.contactMap || {});
-    const contactTeam = safeParse(data.contactTeam, existing.contactTeam || {});
+    // Parse contactTeam safely
+let contactTeam = safeParse(data.contactTeam, existing.contactTeam || {});
+
+// ✅ Deep-parse teamList and members
+if (contactTeam.teamList && typeof contactTeam.teamList === "object") {
+  for (const [teamKey, teamVal] of Object.entries(contactTeam.teamList)) {
+    // Parse team object if it's stringified
+    if (typeof teamVal === "string") {
+      contactTeam.teamList[teamKey] = safeParse(teamVal, {});
+    }
+
+    const team = contactTeam.teamList[teamKey];
+
+    // Parse members if they're stringified
+    if (typeof team.members === "string") {
+      team.members = safeParse(team.members, []);
+    }
+
+    // Ensure members is an array
+    if (!Array.isArray(team.members)) {
+      team.members = [];
+    }
+
+    // Normalize each member
+    team.members = team.members.map((m) => ({
+      teamName: m.teamName || { en: "", vi: "" },
+      teamDesgn: m.teamDesgn || { en: "", vi: "" },
+      teamEmail: m.teamEmail || "",
+      teamPhone: m.teamPhone || "",
+    }));
+  }
+}
+
+// ✅ Save
+existing.contactTeam = contactTeam;
+
+
     const seoMeta = safeParse(data.contactSeoMeta, existing.seoMeta || {}); // 🔥 main fix
 
     // ✅ Handle Banner

@@ -28,7 +28,6 @@ exports.getFiberPage = async (req, res) => {
   }
 };
 
-
 // ---------------- UPDATE ----------------
 exports.updateFiberPage = async (req, res) => {
   try {
@@ -60,11 +59,10 @@ exports.updateFiberPage = async (req, res) => {
     );
     const fiberTeam = safeParse(data.fiberTeam, existing.fiberTeam || {});
 
-
-    // ✅ NEW: parse seoMeta data (matches frontend)
+    // SEO Meta
     const seoMeta = safeParse(data.fiberSeoMeta, existing.seoMeta || {});
 
-    // ---------------- 🆕 SEO META ----------------
+    // ---------------- SEO OG IMAGE ----------------
     if (req.files?.fiberSeoOgImageFile) {
       seoMeta.ogImage = saveFile(req.files.fiberSeoOgImageFile, "fiber/seo");
     } else if (seoMeta.ogImage === "") {
@@ -74,73 +72,85 @@ exports.updateFiberPage = async (req, res) => {
     }
 
     // ---------------- HANDLE FILE UPLOADS ----------------
-if (req.files) {
-  Object.keys(req.files).forEach((key) => {
-    const file = req.files[key];
-    if (!file || !file.name) return;
+    if (req.files) {
+      Object.keys(req.files).forEach((key) => {
+        const file = req.files[key];
+        if (!file || !file.name) return;
 
-    // 🌐 Banner Media
-    if (key.startsWith("fiberBannerMediaFile")) {
-      fiberBanner.fiberBannerMedia = saveFile(file, "fiber/banner");
+        // 🌐 Banner Media
+        if (key.startsWith("fiberBannerMediaFile")) {
+          fiberBanner.fiberBannerMedia = saveFile(file, "fiber/banner");
+        }
+
+        // 🌐 Banner Image
+        if (key.startsWith("fiberBannerImgFile")) {
+          fiberBanner.fiberBannerImg = saveFile(file, "fiber/banner");
+        }
+
+        // 🌿 Sustainability Image
+        if (key.startsWith("fiberSustainabilityImgFile")) {
+          fiberSustainability.fiberSustainabilityImg = saveFile(
+            file,
+            "fiber/sustainability"
+          );
+        }
+
+        // 💡 Choose Us Box Background
+        if (key.startsWith("fiberChooseUsBoxBgFile")) {
+          const index = parseInt(key.replace("fiberChooseUsBoxBgFile", ""));
+          const saved = saveFile(file, "fiber/chooseus");
+
+          if (!fiberChooseUs.fiberChooseUsBox)
+            fiberChooseUs.fiberChooseUsBox = [];
+
+          fiberChooseUs.fiberChooseUsBox[index] =
+            fiberChooseUs.fiberChooseUsBox[index] || {};
+
+          fiberChooseUs.fiberChooseUsBox[index].fiberChooseUsBoxBg = saved;
+        }
+
+        // 🏭 Supplier Images
+        if (key.startsWith("fiberSupplierImgFile")) {
+          const index = parseInt(key.replace("fiberSupplierImgFile", ""));
+          const saved = saveFile(file, "fiber/supplier");
+
+          if (!Array.isArray(fiberSupplier.fiberSupplierImg))
+            fiberSupplier.fiberSupplierImg = [];
+
+          fiberSupplier.fiberSupplierImg[index] = saved;
+        }
+
+        // 📦 Product Images
+        if (key.startsWith("fiberProductImgFile")) {
+          const index = parseInt(key.replace("fiberProductImgFile", ""));
+          const saved = saveFile(file, "fiber/products");
+
+          if (!fiberProducts.fiberProduct) fiberProducts.fiberProduct = [];
+          fiberProducts.fiberProduct[index] =
+            fiberProducts.fiberProduct[index] || {};
+
+          fiberProducts.fiberProduct[index].fiberProductImg = saved;
+        }
+
+        // 🪪 Certification Images
+        if (key.startsWith("fiberCertificationImgFile")) {
+          const index = parseInt(key.replace("fiberCertificationImgFile", ""));
+          const saved = saveFile(file, "fiber/certification");
+
+          if (!Array.isArray(fiberCertification.fiberCertificationImg))
+            fiberCertification.fiberCertificationImg = [];
+
+          fiberCertification.fiberCertificationImg[index] = saved;
+        }
+
+        // 🌐 SEO OG Image
+        if (key === "fiberSeoOgImageFile") {
+          seoMeta.ogImage = saveFile(file, "fiber/seo");
+        }
+      });
     }
 
-    // 🌐 Banner Image
-    if (key.startsWith("fiberBannerImgFile")) {
-      fiberBanner.fiberBannerImg = saveFile(file, "fiber/banner");
-    }
-
-    // 🌿 Sustainability Image
-    if (key.startsWith("fiberSustainabilityImgFile")) {
-      fiberSustainability.fiberSustainabilityImg = saveFile(file, "fiber/sustainability");
-    }
-
-    // 💡 Choose Us Box Background
-    if (key.startsWith("fiberChooseUsBoxBgFile")) {
-      const index = parseInt(key.replace("fiberChooseUsBoxBgFile", ""));
-      const saved = saveFile(file, "fiber/chooseus");
-      if (!fiberChooseUs.fiberChooseUsBox) fiberChooseUs.fiberChooseUsBox = [];
-      fiberChooseUs.fiberChooseUsBox[index] = fiberChooseUs.fiberChooseUsBox[index] || {};
-      fiberChooseUs.fiberChooseUsBox[index].fiberChooseUsBoxBg = saved;
-    }
-
-    // 🏭 Supplier Images ✅✅ FIX ADDED HERE
-    // 🏭 Supplier Images
-if (key.startsWith("fiberSupplierImgFile")) {
-  const index = parseInt(key.replace("fiberSupplierImgFile", ""));
-  const saved = saveFile(file, "fiber/supplier");
-  if (!Array.isArray(fiberSupplier.fiberSupplierImg))
-    fiberSupplier.fiberSupplierImg = [];
-  fiberSupplier.fiberSupplierImg[index] = saved;
-}
-
-
-    // 📦 Product Images
-    if (key.startsWith("fiberProductImgFile")) {
-      const index = parseInt(key.replace("fiberProductImgFile", ""));
-      const saved = saveFile(file, "fiber/products");
-      if (!fiberProducts.fiberProduct) fiberProducts.fiberProduct = [];
-      fiberProducts.fiberProduct[index] = fiberProducts.fiberProduct[index] || {};
-      fiberProducts.fiberProduct[index].fiberProductImg = saved;
-    }
-
-    // 🪪 Certification Images
-    if (key.startsWith("fiberCertificationImgFile")) {
-      const index = parseInt(key.replace("fiberCertificationImgFile", ""));
-      const saved = saveFile(file, "fiber/certification");
-      if (!Array.isArray(fiberCertification.fiberCertificationImg))
-        fiberCertification.fiberCertificationImg = [];
-      fiberCertification.fiberCertificationImg[index] = saved;
-    }
-
-    // 🌐 SEO OG Image
-    if (key === "fiberSeoOgImageFile") {
-      seoMeta.ogImage = saveFile(file, "fiber/seo");
-    }
-  });
-}
-
-
-    // ---------------- SAVE ----------------
+    // ---------------- SAVE TO DATABASE ----------------
     existing.fiberBanner = fiberBanner;
     existing.fiberSustainability = fiberSustainability;
     existing.fiberChooseUs = fiberChooseUs;
@@ -148,12 +158,15 @@ if (key.startsWith("fiberSupplierImgFile")) {
     existing.fiberProducts = fiberProducts;
     existing.fiberCertification = fiberCertification;
     existing.fiberTeam = fiberTeam;
-    existing.seoMeta = seoMeta; // ✅ Save SEO Meta
+    existing.seoMeta = seoMeta;
 
     await existing.save();
-    res.json({ message: "Fiber Page updated successfully", fiber: existing });
+
+    res.json({
+      message: "Fiber Page updated successfully",
+      fiber: existing,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
